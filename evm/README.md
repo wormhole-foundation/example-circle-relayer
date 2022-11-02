@@ -1,13 +1,4 @@
-# Wormhole Integration in EVM
-
-These programs are enumerated the same as the other smart contract
-subdirectories (e.g. [solana](../solana)).
-
-## Design Documents
-
-Read the design documents for each example project:
-
-1. [HelloWorld](../docs/01_hello_world.md)
+# Circle-Relayer-Integration
 
 ## Prerequisites
 
