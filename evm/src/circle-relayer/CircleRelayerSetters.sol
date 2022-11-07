@@ -32,8 +32,16 @@ contract CircleRelayerSetters is CircleRelayerState {
         _state.circleIntegration = circleIntegration_;
     }
 
-    function setRelayerFee(uint256 fee) internal {
-        _state.relayerFee = fee;
+    function setRelayerFee(uint16 chainId_, uint256 fee) internal {
+        _state.relayerFees[chainId_] = fee;
+    }
+
+    function setNativeSwapRatePrecision(uint256 precision) internal {
+        _state.nativeSwapRatePrecision = precision;
+    }
+
+    function setNativeSwapRate(address token, uint256 swapRate) internal {
+        _state.nativeSwapRates[token] = swapRate;
     }
 
     function _registerContract(uint16 chainId_, bytes32 contract_) internal {

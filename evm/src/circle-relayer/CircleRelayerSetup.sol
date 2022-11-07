@@ -13,7 +13,7 @@ contract CircleRelayerSetup is CircleRelayerSetters, ERC1967Upgrade, Context {
         address wormhole,
         uint8 finality,
         address circleIntegration,
-        uint256 relayerFee
+        uint256 redemptionRelayerFee
     ) public {
         require(implementation != address(0), "invalid implementation");
         require(chainId > 0, "invalid chainId");
@@ -25,7 +25,13 @@ contract CircleRelayerSetup is CircleRelayerSetters, ERC1967Upgrade, Context {
         setWormhole(wormhole);
         setWormholeFinality(finality);
         setCircleIntegration(circleIntegration);
-        setRelayerFee(relayerFee);
+
+        // Set relayerFee for this contract, the relayerFee for target contracts
+        // should be registered via the `updateRelayerFee` method.
+        setRelayerFee(chainId, redemptionRelayerFee);
+
+        // Set the swapRate precision to 1e8
+        setNativeSwapRatePrecision(1e8);
 
         // set the implementation
         _upgradeTo(implementation);

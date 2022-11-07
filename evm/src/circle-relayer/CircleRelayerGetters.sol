@@ -35,8 +35,16 @@ contract CircleRelayerGetters is CircleRelayerSetters {
         return ICircleIntegration(_state.circleIntegration);
     }
 
-    function relayerFee() public view returns (uint256) {
-        return _state.relayerFee;
+    function relayerFee(uint16 chainId_) public view returns (uint256) {
+        return _state.relayerFees[chainId_];
+    }
+
+    function nativeSwapRatePrecision() public view returns (uint256) {
+        return _state.nativeSwapRatePrecision;
+    }
+
+    function nativeSwapRate(address token) public view returns (uint256) {
+        return _state.nativeSwapRates[token];
     }
 
     function getRegisteredContract(uint16 emitterChainId) public view returns (bytes32) {
