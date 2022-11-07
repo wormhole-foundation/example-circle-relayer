@@ -24,8 +24,14 @@ contract CircleRelayerStorage {
         // address of the trusted Circle Integration contract on this chain
         address circleIntegration;
 
-        // static fee to relayer (caller of redeemTokens)
-        uint256 relayerFee;
+        // precision of the nativeSwapRates
+        uint256 nativeSwapRatePrecision;
+
+        // mapping of chainId to static relayer fee
+        mapping(uint16 => uint256) relayerFees;
+
+        // mapping of source token address to native asset swap rate (nativePriceUSD/tokenPriceUSD)
+        mapping(address => uint256) nativeSwapRates;
 
         // mapping of initialized implementations
         mapping(address => bool) initializedImplementations;

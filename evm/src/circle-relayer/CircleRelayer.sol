@@ -32,11 +32,16 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
 
         // transfer the token to this contract
         uint256 amountReceived = custodyTokens(token, amount);
+        require(
+            amountReceived > relayerFee(targetChain) + toNativeTokenAmount,
+            "insufficient amountReceived"
+        );
 
         // Construct additional instructions to tell the receiving contract
         // how to handle the token redemption.
         TransferTokensWithRelay memory transferMessage = TransferTokensWithRelay({
             payloadId: 1,
+            targetChain: targetChain,
             toNativeTokenAmount: toNativeTokenAmount,
             targetRecipientWallet: targetRecipientWallet
         });
@@ -70,24 +75,67 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
             deposit.payload
         );
 
-        // cache the token address and relayerFee
+        // cache the token, recipient address and relayerFee
         address token = bytes32ToAddress(deposit.token);
-        uint256 relayerFee = relayerFee();
+        address recipient = bytes32ToAddress(transferMessage.targetRecipientWallet);
+        uint256 relayerFee = relayerFee(chainId());
 
-        // pay the relayer
+        // handle native asset payments and refunds
+        if (transferMessage.toNativeTokenAmount > 0) {
+            // compute amount of native asset to pay the recipient
+            uint256 nativeAmountForRecipient = calculateNativeSwapAmount(
+                token,
+                transferMessage.toNativeTokenAmount
+            );
+
+            // check to see if the relayer sent enough value
+            require(
+                msg.value >= nativeAmountForRecipient,
+                "insufficient native asset amount"
+            );
+
+            // cache the excess value sent by the relayer
+            uint256 relayerRefund = msg.value - nativeAmountForRecipient;
+
+            // refund excess native asset to relayer if applicable
+            if (relayerRefund > 0) {
+                payable(msg.sender).transfer(relayerRefund);
+            }
+
+            // send requested native asset to target recipient
+            payable(recipient).transfer(nativeAmountForRecipient);
+        }
+
+        // pay the relayer in the minted token denomination
         SafeERC20.safeTransfer(
             IERC20(token),
             msg.sender,
             relayerFee
         );
 
-        // Pay the target recipient the difference between the amount sent
-        // and the relayer fee.
+        // pay the target recipient the remaining minted tokens
         SafeERC20.safeTransfer(
             IERC20(token),
-            bytes32ToAddress(transferMessage.targetRecipientWallet),
-            deposit.amount - relayerFee
+            recipient,
+            deposit.amount - relayerFee - transferMessage.toNativeTokenAmount
         );
+    }
+
+    function calculateNativeSwapAmount(
+        address token,
+        uint256 toNativeAmount
+    ) public view returns (uint256) {
+        return
+            nativeSwapRatePrecision() * toNativeAmount /
+            nativeSwapRate(token) * 10 ** (18 - tokenDecimals(token));
+    }
+
+    function tokenDecimals(address token) internal view returns (uint8) {
+        // fetch the token decimals
+        (,bytes memory queriedDecimals) = token.staticcall(
+            abi.encodeWithSignature("decimals()")
+        );
+        return abi.decode(queriedDecimals, (uint8));
     }
 
     function custodyTokens(address token, uint256 amount) internal returns (uint256) {

@@ -99,9 +99,31 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
         _registerContract(chainId, contractAddress);
     }
 
-    /// @notice updateRelayerFee serves to update the fee for relaying transfers
-    function updateRelayerFee(uint256 amount) public onlyOwner {
-        setRelayerFee(amount);
+    /**
+     * @notice updateRelayerFee serves to update the fee for relaying transfers
+     * on all registered contracts.
+     */
+    function updateRelayerFee(
+        uint16 chainId_,
+        uint256 amount
+    ) public onlyOwner {
+        setRelayerFee(chainId_, amount);
+    }
+
+    /**
+     * @notice updateNativeSwapRate serves to update the the swap rate of the native
+     * asset price on this chain, and the price of CircleIntegration supported assets.
+     * The swapRate has a precision of 1e8. For example, for a swap rate of 1.5,
+     * the swapRate argument should be 150000000.
+     */
+    function updateNativeSwapRate(
+        address token,
+        uint256 swapRate
+    ) public onlyOwner {
+        require(circleIntegration().isAcceptedToken(token), "token not accepted");
+        require(swapRate > 0, "swap rate must be positive");
+
+        setNativeSwapRate(token, swapRate);
     }
 
     modifier onlyOwner() {
