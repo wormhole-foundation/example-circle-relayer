@@ -90,10 +90,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
             contractAddress != bytes32(0),
             "emitterAddress cannot equal bytes32(0)"
         );
-        require(
-            getRegisteredContract(chainId_) == bytes32(0),
-            "emitterChainId already registered"
-        );
+        require(chainId_ != 0, "chainId must be > 0");
 
         // update the registeredEmitters state variable
         _registerContract(chainId_, contractAddress);

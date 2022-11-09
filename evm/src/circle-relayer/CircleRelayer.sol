@@ -56,10 +56,13 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
 
         // transfer the tokens with instructions via the circle integration contract
         messageSequence = integration.transferTokensWithPayload(
-            token,
-            amount,
-            targetChain,
-            getRegisteredContract(targetChain),
+            ICircleIntegration.TransferParameters({
+                token: token,
+                amount: amount,
+                targetChain: targetChain,
+                mintRecipient: getRegisteredContract(targetChain)
+            }),
+            0, // batchId = 0 to opt out of batching
             encodeTransferTokensWithRelay(transferMessage)
         );
     }
