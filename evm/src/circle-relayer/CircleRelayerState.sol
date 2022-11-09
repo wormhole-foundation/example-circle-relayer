@@ -27,11 +27,14 @@ contract CircleRelayerStorage {
         // precision of the nativeSwapRates
         uint256 nativeSwapRatePrecision;
 
-        // mapping of chainId to static relayer fee
-        mapping(uint16 => uint256) relayerFees;
+        // mapping of chainId to source token address to relayerFee
+        mapping(uint16 => mapping(address => uint256)) relayerFees;
 
         // mapping of source token address to native asset swap rate (nativePriceUSD/tokenPriceUSD)
         mapping(address => uint256) nativeSwapRates;
+
+        // mapping of source token address to maximum native asset swap amount allowed
+        mapping(address => uint256) maxSwapAmount;
 
         // mapping of initialized implementations
         mapping(address => bool) initializedImplementations;

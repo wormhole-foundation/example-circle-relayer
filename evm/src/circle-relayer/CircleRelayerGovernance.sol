@@ -82,7 +82,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
 
     /// @notice registerContract serves to save trusted circle relayer contract addresses
     function registerContract(
-        uint16 chainId,
+        uint16 chainId_,
         bytes32 contractAddress
     ) public onlyOwner {
         // sanity check both input arguments
@@ -91,12 +91,12 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
             "emitterAddress cannot equal bytes32(0)"
         );
         require(
-            getRegisteredContract(chainId) == bytes32(0),
+            getRegisteredContract(chainId_) == bytes32(0),
             "emitterChainId already registered"
         );
 
         // update the registeredEmitters state variable
-        _registerContract(chainId, contractAddress);
+        _registerContract(chainId_, contractAddress);
     }
 
     /**
@@ -105,9 +105,10 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
      */
     function updateRelayerFee(
         uint16 chainId_,
+        address token,
         uint256 amount
     ) public onlyOwner {
-        setRelayerFee(chainId_, amount);
+        setRelayerFee(chainId_, token, amount);
     }
 
     /**
@@ -124,6 +125,13 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
         require(swapRate > 0, "swap rate must be positive");
 
         setNativeSwapRate(token, swapRate);
+    }
+
+    function updateMaxSwapAmount(
+        address token,
+        uint256 maxAmount
+    ) public onlyOwner {
+        setMaxSwapAmount(token, maxAmount);
     }
 
     modifier onlyOwner() {

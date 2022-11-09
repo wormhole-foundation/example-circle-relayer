@@ -32,8 +32,9 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
 
         // transfer the token to this contract
         uint256 amountReceived = custodyTokens(token, amount);
+        uint256 targetRelayerFee = relayerFee(targetChain, token);
         require(
-            amountReceived > relayerFee(targetChain) + toNativeTokenAmount,
+            amountReceived > targetRelayerFee + toNativeTokenAmount,
             "insufficient amountReceived"
         );
 
@@ -41,7 +42,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         // how to handle the token redemption.
         TransferTokensWithRelay memory transferMessage = TransferTokensWithRelay({
             payloadId: 1,
-            targetChain: targetChain,
+            targetRelayerFee: targetRelayerFee,
             toNativeTokenAmount: toNativeTokenAmount,
             targetRecipientWallet: targetRecipientWallet
         });
@@ -66,51 +67,100 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
     function redeemTokens(
         ICircleIntegration.RedeemParameters memory redeemParams
     ) public payable nonReentrant {
+        // cache circle integration instance
+        ICircleIntegration integration = circleIntegration();
+
         // mint USDC to this contract
         ICircleIntegration.WormholeDepositWithPayload memory deposit =
-            circleIntegration().redeemTokensWithPayload(redeemParams);
+            integration.redeemTokensWithPayload(redeemParams);
 
         // parse the additional instructions from the deposit message
         TransferTokensWithRelay memory transferMessage = decodeTransferTokensWithRelay(
             deposit.payload
         );
 
-        // cache the token, recipient address and relayerFee
+        // verify that the sender is a registered contract
+        require(
+            deposit.fromAddress == getRegisteredContract(
+                integration.getChainIdFromDomain(deposit.sourceDomain)
+            ),
+            "fromAddress is not a registered contract"
+        );
+
+        // cache the token and recipient addresses
         address token = bytes32ToAddress(deposit.token);
         address recipient = bytes32ToAddress(transferMessage.targetRecipientWallet);
-        uint256 relayerFee = relayerFee(chainId());
 
         // handle native asset payments and refunds
         if (transferMessage.toNativeTokenAmount > 0) {
-            // compute amount of native asset to pay the recipient
-            uint256 nativeAmountForRecipient = calculateNativeSwapAmount(
-                token,
-                transferMessage.toNativeTokenAmount
-            );
-
-            // check to see if the relayer sent enough value
-            require(
-                msg.value >= nativeAmountForRecipient,
-                "insufficient native asset amount"
-            );
-
-            // cache the excess value sent by the relayer
-            uint256 relayerRefund = msg.value - nativeAmountForRecipient;
-
-            // refund excess native asset to relayer if applicable
-            if (relayerRefund > 0) {
-                payable(msg.sender).transfer(relayerRefund);
+            /**
+             * Compute the maximum amount of tokens that the user is allowed
+             * to swap for native assets.
+             *
+             * Override the toNativeTokenAmount in the transferMessage if
+             * the toNativeTokenAmount is greater than the maxToNativeAllowed.
+             *
+             * Compute the amount of native assets to send the recipient.
+             */
+            uint256 nativeAmountForRecipient;
+            uint256 maxToNativeAllowed = calculateMaxSwapAmount(token);
+            if (transferMessage.toNativeTokenAmount > maxToNativeAllowed) {
+                transferMessage.toNativeTokenAmount = maxToNativeAllowed;
+                nativeAmountForRecipient = maxSwapAmount(token);
+            } else {
+                // compute amount of native asset to pay the recipient
+                nativeAmountForRecipient = calculateNativeSwapAmount(
+                    token,
+                    transferMessage.toNativeTokenAmount
+                );
             }
 
-            // send requested native asset to target recipient
-            payable(recipient).transfer(nativeAmountForRecipient);
+            /**
+             * The nativeAmountForRecipient can be zero if the user specifed a toNativeTokenAmount
+             * that is too little to convert to native asset. We need to override the toNativeTokenAmount
+             * to be zero if that is the case, that way the user receives the full amount of minted USDC.
+             */
+            if (nativeAmountForRecipient > 0) {
+                // check to see if the relayer sent enough value
+                require(
+                    msg.value >= nativeAmountForRecipient,
+                    "insufficient native asset amount"
+                );
+
+                // refund excess native asset to relayer if applicable
+                uint256 relayerRefund = msg.value - nativeAmountForRecipient;
+                if (relayerRefund > 0) {
+                    payable(msg.sender).transfer(relayerRefund);
+                }
+
+                // send requested native asset to target recipient
+                payable(recipient).transfer(nativeAmountForRecipient);
+            } else {
+                // override the toNativeTokenAmount in the transferMessage
+                transferMessage.toNativeTokenAmount = 0;
+
+                // refund the relayer any native asset sent to this contract
+                if (msg.value > 0) {
+                    payable(msg.sender).transfer(msg.value);
+                }
+            }
+        }
+
+        /**
+         * Override the relayerFee if the encoded targetRelayerFee is less
+         * than the relayer fee set on this chain. This should only happen
+         * if relayer fees are not syncronized across all chains.
+         */
+        uint256 relayerFee = relayerFee(chainId(), token);
+        if (relayerFee > transferMessage.targetRelayerFee) {
+            relayerFee = transferMessage.targetRelayerFee;
         }
 
         // pay the relayer in the minted token denomination
         SafeERC20.safeTransfer(
             IERC20(token),
             msg.sender,
-            relayerFee
+            relayerFee + transferMessage.toNativeTokenAmount
         );
 
         // pay the target recipient the remaining minted tokens
@@ -119,6 +169,14 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
             recipient,
             deposit.amount - relayerFee - transferMessage.toNativeTokenAmount
         );
+    }
+
+    function calculateMaxSwapAmount(
+        address token
+    ) public view returns (uint256) {
+        return
+            (maxSwapAmount(token) * nativeSwapRate(token)) /
+            (10 ** (18 - tokenDecimals(token)) * nativeSwapRatePrecision());
     }
 
     function calculateNativeSwapAmount(
