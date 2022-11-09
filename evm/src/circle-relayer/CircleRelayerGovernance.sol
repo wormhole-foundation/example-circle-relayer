@@ -20,7 +20,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
 
         _upgradeTo(newImplementation);
 
-        /// @notice call initialize function of the new implementation
+        // call initialize function of the new implementation
         (bool success, bytes memory reason) = newImplementation.delegatecall(
             abi.encodeWithSignature("initialize()")
         );
@@ -124,6 +124,10 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
         setNativeSwapRate(token, swapRate);
     }
 
+    /**
+     * @notice updateMaxSwapAmount serves to update the max amount of native assets the
+     * the contract will pay to the target recipient.
+     */
     function updateMaxSwapAmount(
         address token,
         uint256 maxAmount
