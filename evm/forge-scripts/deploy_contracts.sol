@@ -33,20 +33,16 @@ contract ContractScript is Script {
         // next Implementation
         implementation = new CircleRelayerImplementation();
 
-        // set initial relayer fee to $0.05
-        uint256 initialRelayerFee = 500;
-
         // setup Proxy using Implementation
         proxy = new CircleRelayerProxy(
             address(setup),
             abi.encodeWithSelector(
-                bytes4(keccak256("setup(address,uint16,address,uint8,address,uint256)")),
+                bytes4(keccak256("setup(address,uint16,address,uint8,address)")),
                 address(implementation),
                 wormhole.chainId(),
                 address(wormhole),
                 uint8(1), // finality
-                address(circleIntegration),
-                initialRelayerFee
+                address(circleIntegration)
             )
         );
     }

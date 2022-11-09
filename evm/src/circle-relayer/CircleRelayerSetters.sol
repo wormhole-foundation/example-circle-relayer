@@ -32,8 +32,8 @@ contract CircleRelayerSetters is CircleRelayerState {
         _state.circleIntegration = circleIntegration_;
     }
 
-    function setRelayerFee(uint16 chainId_, uint256 fee) internal {
-        _state.relayerFees[chainId_] = fee;
+    function setRelayerFee(uint16 chainId_, address token, uint256 fee) internal {
+        _state.relayerFees[chainId_][token] = fee;
     }
 
     function setNativeSwapRatePrecision(uint256 precision) internal {
@@ -44,11 +44,11 @@ contract CircleRelayerSetters is CircleRelayerState {
         _state.nativeSwapRates[token] = swapRate;
     }
 
-    function _registerContract(uint16 chainId_, bytes32 contract_) internal {
-        _state.registeredContracts[chainId_] = contract_;
+    function setMaxSwapAmount(address token, uint256 maximum) internal {
+        _state.maxSwapAmount[token] = maximum;
     }
 
-    function consumeMessage(bytes32 hash) internal {
-        _state.consumedMessages[hash] = true;
+    function _registerContract(uint16 chainId_, bytes32 contract_) internal {
+        _state.registeredContracts[chainId_] = contract_;
     }
 }

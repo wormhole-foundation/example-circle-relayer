@@ -13,7 +13,7 @@ contract CircleRelayerMessages is CircleRelayerStructs {
     ) public pure returns (bytes memory) {
         return abi.encodePacked(
             uint8(1),
-            transfer.targetChain,
+            transfer.targetRelayerFee,
             transfer.toNativeTokenAmount,
             transfer.targetRecipientWallet
         );
@@ -30,9 +30,9 @@ contract CircleRelayerMessages is CircleRelayerStructs {
 
         require(transfer.payloadId == 1, "CIRCLE_RELAYER: invalid message payloadId");
 
-        // target chainId
-        transfer.targetChain = encoded.toUint16(index);
-        index += 2;
+        // target relayer fee
+        transfer.targetRelayerFee = encoded.toUint256(index);
+        index += 32;
 
         // amount of tokens to convert to native currency
         transfer.toNativeTokenAmount = encoded.toUint256(index);
