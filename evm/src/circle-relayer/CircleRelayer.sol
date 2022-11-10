@@ -11,9 +11,27 @@ import {IWormhole} from "../interfaces/IWormhole.sol";
 import "./CircleRelayerGovernance.sol";
 import "./CircleRelayerMessages.sol";
 
+/**
+ * @title Circle Bridge Asset Relayer Example
+ * @notice This example contract composes on Wormhole's Circle Integration contracts to faciliate
+ * one-click transfers of Circle Bridge supported assets cross chain.
+ */
 contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, ReentrancyGuard {
     using BytesLib for bytes;
 
+    /**
+     * @notice Calls Wormhole's Circle Integration contract to burn user specified tokens.
+     * It emits a Wormhole message with instructions for how to handle relayer payments
+     * on the target contract and the quantity of tokens to convert into native assets
+     * for the user.
+     * @param token Address of the Circle Bridge asset to be transferred.
+     * @param amount Quantity of tokens to be transferred.
+     * @param toNativeTokenAmount Amount of tokens to swap into native assets on
+     * the target chain.
+     * @param targetChain Wormhole chain ID of the target blockchain.
+     * @param targetRecipientWallet User's wallet address on the target blockchain.
+     * @return messageSequence Wormhole sequence for emitted TransferTokensWithRelay message.
+     */
     function transferTokensWithRelay(
         address token,
         uint256 amount,
@@ -67,6 +85,14 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         );
     }
 
+    /**
+     * @notice Calls Wormhole's Circle Integration contract to complete the token transfer. Takes
+     * custody of the minted tokens and sends the tokens to the target recipient.
+     * It pays the relayer in the minted token denomination. If requested by the user,
+     * it will perform a swap with the off-chain relayer to provide the user with native assets.
+     * @param redeemParams Struct containing an attested Wormhole message, Circle Bridge message,
+     * and Circle transfer attestation.
+     */
     function redeemTokens(
         ICircleIntegration.RedeemParameters memory redeemParams
     ) public payable nonReentrant {
@@ -174,19 +200,37 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         );
     }
 
+    /**
+     * @notice Calculates the max amount of tokens the user can convert to
+     * native assets on this chain.
+     * @dev The max amount of native assets the contract will swap with the user
+     * is governed by the `maxSwapAmount` state variable.
+     * @param token Address of token being transferred.
+     * @return maxAllowed The maximum number of tokens the user is allowed to
+     * swap for native assets.
+     */
     function calculateMaxSwapAmount(
         address token
-    ) public view returns (uint256) {
-        return
+    ) public view returns (uint256 maxAllowed) {
+        maxAllowed =
             (maxSwapAmount(token) * nativeSwapRate(token)) /
             (10 ** (18 - tokenDecimals(token)) * nativeSwapRatePrecision());
     }
 
+    /**
+     * @notice Calculates the amount of native assets that a user will receive
+     * when swapping transferred tokens for native assets.
+     * @dev The swap rate is governed by the `nativeSwapRate` state variable.
+     * @param token Address of token being transferred.
+     * @param toNativeAmount Quantity of tokens to be converted to native assets.
+     * @return nativeAmount The exchange rate between native assets and the `toNativeAmount`
+     * of transferred tokens.
+     */
     function calculateNativeSwapAmount(
         address token,
         uint256 toNativeAmount
-    ) public view returns (uint256) {
-        return
+    ) public view returns (uint256 nativeAmount) {
+        nativeAmount =
             nativeSwapRatePrecision() * toNativeAmount /
             nativeSwapRate(token) * 10 ** (18 - tokenDecimals(token));
     }
