@@ -105,4 +105,4 @@ struct TransferTokensWithRelay {
 }
 ```
 
-[circle integration]: https://github.com/certusone/wormhole-circle-integration
+[circle integration]: https://github.com/wormhole-foundation/wormhole-circle-integration
