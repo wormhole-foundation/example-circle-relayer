@@ -12,7 +12,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     event WormholeFinalityUpdated(uint8 indexed oldLevel, uint8 indexed newFinality);
     event OwnershipTransfered(address indexed oldOwner, address indexed newOwner);
 
-    /// @notice upgrade serves to upgrade contract implementations
+    /// @notice `upgrade` serves to upgrade contract implementations
     function upgrade(uint16 chainId_, address newImplementation) public onlyOwner {
         require(chainId_ == chainId(), "wrong chain");
 
@@ -30,7 +30,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
         emit ContractUpgraded(currentImplementation, newImplementation);
     }
 
-    /// @notice updateWormholeFinality serves to change the wormhole messaging consistencyLevel
+    /// @notice `updateWormholeFinality` serves to change the wormhole messaging consistencyLevel
     function updateWormholeFinality(
         uint16 chainId_,
         uint8 newWormholeFinality
@@ -46,7 +46,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     }
 
     /**
-     * @notice submitOwnershipTransferRequest serves to begin the ownership transfer process of the contracts
+     * @notice `submitOwnershipTransferRequest` serves to begin the ownership transfer process of the contracts
      * - it saves an address for the new owner in the pending state
      */
     function submitOwnershipTransferRequest(
@@ -60,7 +60,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     }
 
     /**
-     * @notice confirmOwnershipTransferRequest serves to finalize an ownership transfer
+     * @notice `confirmOwnershipTransferRequest` serves to finalize an ownership transfer
      * - it checks that the caller is the pendingOwner to validate the wallet address
      * - it updates the owner state variable with the pendingOwner state variable
      */
@@ -80,7 +80,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
         emit OwnershipTransfered(currentOwner, newOwner);
     }
 
-    /// @notice registerContract serves to save trusted circle relayer contract addresses
+    /// @notice `registerContract` serves to save trusted circle relayer contract addresses
     function registerContract(
         uint16 chainId_,
         bytes32 contractAddress
@@ -97,7 +97,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     }
 
     /**
-     * @notice updateRelayerFee serves to update the fee for relaying transfers
+     * @notice `updateRelayerFee` serves to update the fee for relaying transfers
      * on all registered contracts.
      */
     function updateRelayerFee(
@@ -109,8 +109,8 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     }
 
     /**
-     * @notice updateNativeSwapRate serves to update the the swap rate of the native
-     * asset price on this chain, and the price of CircleIntegration supported assets.
+     * @notice `updateNativeSwapRate` serves to update the the swap rate of the native
+     * asset price on this chain and the price of CircleIntegration supported assets.
      * The swapRate has a precision of 1e8. For example, for a swap rate of 1.5,
      * the swapRate argument should be 150000000.
      */
@@ -125,7 +125,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     }
 
     /**
-     * @notice updateMaxSwapAmount serves to update the max amount of native assets the
+     * @notice `updateMaxSwapAmount` serves to update the max amount of native assets the
      * the contract will pay to the target recipient.
      */
     function updateMaxSwapAmount(
