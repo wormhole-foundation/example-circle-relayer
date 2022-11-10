@@ -10,7 +10,7 @@ import {IWormhole} from "../src/interfaces/IWormhole.sol";
 import {ICircleIntegration} from "../src/interfaces/ICircleIntegration.sol";
 
 /**
- * @title A Test Suite for the EVM HelloWorld Contracts
+ * @title A Test Suite for the Circle-Relayer Example Smart Contracts
  */
 contract CircleRelayerTest is Test {
     // guardian private key for simulated signing of Wormhole messages
@@ -21,8 +21,8 @@ contract CircleRelayerTest is Test {
     WormholeSimulator public wormholeSimulator;
 
     /**
-     * @notice Sets up the wormholeSimulator contracts and deploys HelloWorld
-     * contracts before each test is executed.
+     * @notice Sets up the wormholeSimulator contracts, which can be used to simulate
+     * attesting Wormhole messages.
      */
     function setUp() public {
         // verify that we're using the correct fork (AVAX mainnet in this case)
