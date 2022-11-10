@@ -41,7 +41,7 @@ To initiate a relayable transfer of Circle Bridge assets, a user will invoke the
 
 `transferTokensWithRelay` takes custody of the user's tokens and calls Wormhole's [Circle Integration] contract to initiate a token burn via the Circle Bridge. This contract emits a Wormhole message (see the `Payloads` section of this design) containing instructions on how to pay the off-chain relayer and the quantity of transferred tokens to convert into native assets on the target chain.
 
-Once the user a relayable transfer is initiated (i.e. user submits transaction), the off-chain relayer fetches the attested Wormhole message and parses the transaction logs to locate the message emitted by the Circle Bridge contract. The off-chain relayer sends a request to Circle's off-chain process with this message and grabs the attestation from the process's response (serialized EC signatures), which validates the token mint on the target chain.
+Once the user initiates a relayable transfer (i.e. user submits transaction), the off-chain relayer fetches the attested Wormhole message and parses the transaction logs to locate the message emitted by the Circle Bridge contract. The off-chain relayer sends a request to Circle's off-chain process with this message and grabs the attestation from the process's response (serialized EC signatures), which validates the token mint on the target chain.
 
 To complete the transfer, the off-chain relayer invokes the `redeemTokens` method on the target `CircleRelayer` contract, passing the following arguments:
 - Wormhole message emitted by the Circle Integration contract
