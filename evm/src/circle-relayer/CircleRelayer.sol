@@ -100,7 +100,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         ICircleIntegration integration = circleIntegration();
 
         // mint USDC to this contract
-        ICircleIntegration.WormholeDepositWithPayload memory deposit =
+        ICircleIntegration.DepositWithPayload memory deposit = 
             integration.redeemTokensWithPayload(redeemParams);
 
         // parse the additional instructions from the deposit message
