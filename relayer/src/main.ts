@@ -6,11 +6,13 @@ import {
   getEmitterAddressEth,
   getSignedVAAWithRetry,
   uint8ArrayToHex,
+  tryUint8ArrayToNative,
 } from "@certusone/wormhole-sdk";
-import { Implementation__factory } from "@certusone/wormhole-sdk/lib/cjs/ethers-contracts";
-import { TypedEvent } from "@certusone/wormhole-sdk/lib/cjs/ethers-contracts/commons";
-import { AxiosResponse } from "axios";
-import { Contract, ethers, Wallet } from "ethers";
+import {Implementation__factory} from "@certusone/wormhole-sdk/lib/cjs/ethers-contracts";
+import {TypedEvent} from "@certusone/wormhole-sdk/lib/cjs/ethers-contracts/commons";
+import {AxiosResponse} from "axios";
+import {abi as RELAYER_ABI} from "../../evm/out/ICircleRelayer.sol/ICircleRelayer.json";
+import {Contract, ethers, Wallet} from "ethers";
 require("dotenv").config();
 const axios = require("axios"); // import breaks
 
@@ -58,13 +60,13 @@ const CIRCLE_EMITTER_ADDRESSES = {
 };
 
 const USDC_RELAYER = {
-  [CHAIN_ID_ETH]: "0xd9d949cd09d57ab7e40d558ce592352dd4cf82bc",
-  [CHAIN_ID_AVAX]: "0x3f091d2e415dccc451c4ca3de18b98a1641741d9",
+  [CHAIN_ID_ETH]: "0x2dacca34c172687efa15243a179ea9e170864a67",
+  [CHAIN_ID_AVAX]: "0x7b135d7959e59ba45c55ae08c14920b06f2658ec",
 };
 
 const USDC_WH_SENDER = {
-  [CHAIN_ID_ETH]: "0xbed1d2fa5e26653235879c64aa79e553d24c4c33",
-  [CHAIN_ID_AVAX]: "0x8e9e80431c5b1d32163b1a2c6e98216982d90ffb",
+  [CHAIN_ID_ETH]: "0xbdcc4ebe3157df347671e078a41ee5ce137cd306",
+  [CHAIN_ID_AVAX]: "0xb200977d46aea35ce6368d181534f413570a0f54",
 };
 
 const USDC_WH_EMITTER = {
@@ -72,7 +74,7 @@ const USDC_WH_EMITTER = {
   [CHAIN_ID_AVAX]: getEmitterAddressEth(USDC_WH_SENDER[CHAIN_ID_AVAX]),
 };
 
-const CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN: { [key in number]: SupportedChainId } = {
+const CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN: {[key in number]: SupportedChainId} = {
   0: CHAIN_ID_ETH,
   1: CHAIN_ID_AVAX,
 };
@@ -177,6 +179,16 @@ function handleRelayerEvent(
       }
       const toChain = CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN[toDomain];
       const mintRecipient = payloadArray.subarray(81, 113);
+
+      // parse the token address and toNativeAmount
+      const token = tryUint8ArrayToNative(
+        payloadArray.subarray(1, 33),
+        toChain
+      );
+      const toNativeAmount = ethers.utils.hexlify(
+        payloadArray.subarray(180, 212)
+      );
+
       if (
         !mintRecipient.equals(
           ethers.utils.zeroPad(ethers.utils.arrayify(USDC_RELAYER[toChain]), 32)
@@ -205,7 +217,7 @@ function handleRelayerEvent(
         );
       }
       console.log("Fetching Wormhole message...");
-      const { vaaBytes } = await getSignedVAAWithRetry(
+      const {vaaBytes} = await getSignedVAAWithRetry(
         WORMHOLE_RPC_HOSTS,
         fromChain,
         USDC_WH_EMITTER[fromChain],
@@ -219,11 +231,29 @@ function handleRelayerEvent(
       console.log(transferInfo);
       const contract = new Contract(
         USDC_RELAYER[toChain],
-        [`function redeemTokens((bytes,bytes,bytes)) external payable`],
+        RELAYER_ABI,
         SIGNERS[toChain]
       );
-      const tx = await contract.redeemTokens(transferInfo);
-      console.log("Redeemed in tx", tx.hash);
+
+      // query for native amount to swap with contract
+      const nativeSwapQuote = await contract.calculateNativeSwapAmount(
+        token,
+        toNativeAmount
+      );
+      console.log(
+        `native amount to swap with contract: ${ethers.utils.formatEther(
+          nativeSwapQuote
+        )}`
+      );
+
+      const tx: ethers.ContractTransaction = await contract.redeemTokens(
+        transferInfo,
+        {
+          value: nativeSwapQuote,
+        }
+      );
+      const redeedReceipt: ethers.ContractReceipt = await tx.wait();
+      console.log("Redeemed in tx", redeedReceipt.transactionHash);
     } catch (e) {
       console.error(e);
     }
