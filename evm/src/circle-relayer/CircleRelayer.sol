@@ -67,8 +67,8 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         ICircleIntegration.RedeemParameters memory redeemParams
     ) public payable nonReentrant {
         // mint USDC to this contract
-        ICircleIntegration.WormholeDepositWithPayload memory deposit =
-            circleIntegration().redeemTokensWithPayload(redeemParams);
+        ICircleIntegration.DepositWithPayload memory deposit =
+            integration.redeemTokensWithPayload(redeemParams);
 
         // parse the additional instructions from the deposit message
         TransferTokensWithRelay memory transferMessage = decodeTransferTokensWithRelay(
