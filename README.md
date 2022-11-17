@@ -75,3 +75,14 @@ make integration-test
 # unit tests and local-validator integration tests
 make test
 ```
+
+## Relayer
+
+To run the off-chain relayer process, check that the contract addresses are correct in the `relayer/src/main.ts` file, then run the following commands:
+
+```
+cd relayer
+npm ci
+npm run build
+npm run start
+```
