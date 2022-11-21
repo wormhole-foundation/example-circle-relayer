@@ -11,7 +11,6 @@ import {
 import {Implementation__factory} from "@certusone/wormhole-sdk/lib/cjs/ethers-contracts";
 import {TypedEvent} from "@certusone/wormhole-sdk/lib/cjs/ethers-contracts/commons";
 import {AxiosResponse} from "axios";
-import {abi as RELAYER_ABI} from "../../evm/out/ICircleRelayer.sol/ICircleRelayer.json";
 import {Contract, ethers, Wallet} from "ethers";
 require("dotenv").config();
 const axios = require("axios"); // import breaks
@@ -178,7 +177,10 @@ function handleRelayerEvent(
         console.warn(`Unknown toDomain ${toDomain}`);
       }
       const toChain = CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN[toDomain];
-      const mintRecipient = payloadArray.subarray(81, 113);
+      const mintRecipient = tryUint8ArrayToNative(
+        payloadArray.subarray(81, 113),
+        toChain
+      );
 
       // parse the token address and toNativeAmount
       const token = tryUint8ArrayToNative(
@@ -189,11 +191,7 @@ function handleRelayerEvent(
         payloadArray.subarray(180, 212)
       );
 
-      if (
-        !mintRecipient.equals(
-          ethers.utils.zeroPad(ethers.utils.arrayify(USDC_RELAYER[toChain]), 32)
-        )
-      ) {
+      if (mintRecipient != USDC_RELAYER[fromChain]) {
         console.warn(
           `Unknown mintRecipient ${mintRecipient} for chain ${toChain}`
         );
@@ -231,7 +229,10 @@ function handleRelayerEvent(
       console.log(transferInfo);
       const contract = new Contract(
         USDC_RELAYER[toChain],
-        RELAYER_ABI,
+        [
+          "function redeemTokens((bytes,bytes,bytes)) payable",
+          "function calculateNativeSwapAmount(address,uint256) view returns (uint256)",
+        ],
         SIGNERS[toChain]
       );
 
