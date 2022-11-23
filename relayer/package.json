@@ -1,7 +1,7 @@
 {
   "scripts": {
     "build": "tsc",
-    "start": "node lib/relayer/src/main.js"
+    "start": "node lib/main.js"
   },
   "dependencies": {
     "@certusone/wormhole-sdk": "^0.9.0",

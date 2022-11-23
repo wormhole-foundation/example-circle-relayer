@@ -78,6 +78,17 @@ const CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN: {[key in number]: SupportedChainId} = {
   1: CHAIN_ID_AVAX,
 };
 
+const WORMHOLE_CONTRACTS = {
+  [CHAIN_ID_ETH]: Implementation__factory.connect(
+    CONTRACTS.TESTNET["ethereum"].core,
+    PROVIDERS[CHAIN_ID_ETH]
+  ),
+  [CHAIN_ID_AVAX]: Implementation__factory.connect(
+    CONTRACTS.TESTNET["avalanche"].core,
+    PROVIDERS[CHAIN_ID_AVAX]
+  ),
+};
+
 const WORMHOLE_RPC_HOSTS = ["https://wormhole-v2-testnet-api.certus.one"];
 
 function findCircleMessageInLogs(
@@ -261,7 +272,7 @@ function handleRelayerEvent(
   })();
 }
 
-for (const chainId of SUPPORTED_CHAINS) {
+function subscribeToEvents(wormhole: ethers.Contract, chainId: 2 | 6) {
   const chainName = coalesceChainName(chainId);
   const coreContract = CONTRACTS.TESTNET[chainName].core;
   const sender = USDC_WH_SENDER[chainId];
@@ -269,10 +280,33 @@ for (const chainId of SUPPORTED_CHAINS) {
     console.error("No known core contract for chain", chainName);
     process.exit(1);
   }
-  const wormhole = Implementation__factory.connect(
-    coreContract,
-    PROVIDERS[chainId]
+
+  // unsubscribe
+  wormhole.off(
+    wormhole.filters.LogMessagePublished(sender),
+    handleRelayerEvent
   );
+
+  // resubscribe
   wormhole.on(wormhole.filters.LogMessagePublished(sender), handleRelayerEvent);
   console.log("Subscribed to", chainName, coreContract, sender);
 }
+
+async function main(sleepMs: number) {
+  let run = true;
+  while (run) {
+    // resubscribe to contract events every 5 minutes
+    for (const chainId of SUPPORTED_CHAINS) {
+      try {
+        subscribeToEvents(WORMHOLE_CONTRACTS[chainId], chainId);
+      } catch (e: any) {
+        console.log(e);
+        run = false;
+      }
+    }
+    await sleep(sleepMs);
+  }
+}
+
+// start the process
+main(300000);
