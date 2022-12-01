@@ -12,6 +12,7 @@ import {Implementation__factory} from "@certusone/wormhole-sdk/lib/cjs/ethers-co
 import {TypedEvent} from "@certusone/wormhole-sdk/lib/cjs/ethers-contracts/commons";
 import {AxiosResponse} from "axios";
 import {Contract, ethers, Wallet} from "ethers";
+import {WebSocketProvider} from "./websocket";
 require("dotenv").config();
 const axios = require("axios"); // import breaks
 
@@ -44,8 +45,8 @@ const SUPPORTED_CHAINS = [CHAIN_ID_ETH, CHAIN_ID_AVAX];
 type SupportedChainId = typeof SUPPORTED_CHAINS[number];
 
 const PROVIDERS = {
-  [CHAIN_ID_ETH]: new ethers.providers.WebSocketProvider(ETH_RPC),
-  [CHAIN_ID_AVAX]: new ethers.providers.WebSocketProvider(AVAX_RPC),
+  [CHAIN_ID_ETH]: new WebSocketProvider(ETH_RPC),
+  [CHAIN_ID_AVAX]: new WebSocketProvider(AVAX_RPC),
 };
 
 const SIGNERS = {
@@ -237,7 +238,7 @@ function handleRelayerEvent(
         circleBridgeMessage,
         circleAttestation,
       ];
-      console.log(transferInfo);
+      console.log("All redeem parameters have been located");
       const contract = new Contract(
         USDC_RELAYER[toChain],
         [
@@ -247,13 +248,14 @@ function handleRelayerEvent(
         SIGNERS[toChain]
       );
 
+      console.log("Fetching native asset swap quote");
       // query for native amount to swap with contract
       const nativeSwapQuote = await contract.calculateNativeSwapAmount(
         token,
         toNativeAmount
       );
       console.log(
-        `native amount to swap with contract: ${ethers.utils.formatEther(
+        `Native amount to swap with contract: ${ethers.utils.formatEther(
           nativeSwapQuote
         )}`
       );
