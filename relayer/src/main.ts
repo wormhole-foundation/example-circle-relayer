@@ -205,8 +205,9 @@ function handleRelayerEvent(
 
       if (mintRecipient != USDC_RELAYER[fromChain]) {
         console.warn(
-          `Unknown mintRecipient ${mintRecipient} for chain ${toChain}`
+          `Unknown mintRecipient ${mintRecipient} for chain ${toChain}, terminating relay`
         );
+        return;
       }
       console.log(
         `Processing transaction from ${fromDomain}:${fromChain}:${coalesceChainName(
