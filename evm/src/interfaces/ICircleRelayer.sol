@@ -21,55 +21,29 @@ interface ICircleRelayer {
         bytes32 targetRecipientWallet
     ) external payable returns (uint64 messageSequence);
 
-    function redeemTokens(
-        ICircleIntegration.RedeemParameters memory redeemParams
-    ) external payable;
+    function redeemTokens(ICircleIntegration.RedeemParameters memory redeemParams) external payable;
 
-     function calculateMaxSwapAmount(
-        address token
-    ) external view returns (uint256);
+     function calculateMaxSwapAmount(address token) external view returns (uint256);
 
-    function calculateNativeSwapAmount(
-        address token,
-        uint256 toNativeAmount
-    ) external view returns (uint256);
+    function calculateNativeSwapAmount(address token, uint256 toNativeAmount) external view returns (uint256);
 
     function bytes32ToAddress(bytes32 address_) external pure returns (address);
 
     function upgrade(uint16 chainId_, address newImplementation) external;
 
-    function updateWormholeFinality(
-        uint16 chainId_,
-        uint8 newWormholeFinality
-    ) external;
+    function updateWormholeFinality(uint16 chainId_, uint8 newWormholeFinality) external;
 
-    function submitOwnershipTransferRequest(
-        uint16 chainId_,
-        address newOwner
-    ) external;
+    function submitOwnershipTransferRequest(uint16 chainId_, address newOwner) external;
 
     function confirmOwnershipTransferRequest() external;
 
-    function registerContract(
-        uint16 chainId_,
-        bytes32 contractAddress
-    ) external;
+    function registerContract(uint16 chainId_, bytes32 contractAddress) external;
 
-    function updateRelayerFee(
-        uint16 chainId_,
-        address token,
-        uint256 amount
-    ) external;
+    function updateRelayerFee(uint16 chainId_, address token, uint256 amount) external;
 
-    function updateNativeSwapRate(
-        address token,
-        uint256 swapRate
-    ) external;
+    function updateNativeSwapRate(address token, uint256 swapRate) external;
 
-    function updateMaxSwapAmount(
-        address token,
-        uint256 maxAmount
-    ) external;
+    function updateMaxSwapAmount(address token, uint256 maxAmount) external;
 
     function owner() external view returns (address);
 

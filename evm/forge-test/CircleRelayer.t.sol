@@ -4,45 +4,113 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import {BytesLib} from "../src/libraries/BytesLib.sol";
 import {WormholeSimulator} from "wormhole-solidity/WormholeSimulator.sol";
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import {IWormhole} from "../src/interfaces/IWormhole.sol";
-import {ICircleIntegration} from "../src/interfaces/ICircleIntegration.sol";
+import {IUSDC} from "../src/interfaces/IUSDC.sol";
+import {ICircleRelayer} from "../src/interfaces/ICircleRelayer.sol";
+
+import {CircleRelayerStructs} from "../src/circle-relayer/CircleRelayerStructs.sol";
+import {CircleRelayerSetup} from "../src/circle-relayer/CircleRelayerSetup.sol";
+import {CircleRelayerImplementation} from "../src/circle-relayer/CircleRelayerImplementation.sol";
+import {CircleRelayerProxy} from "../src/circle-relayer/CircleRelayerProxy.sol";
 
 /**
- * @title A Test Suite for the Circle-Relayer Example Smart Contracts
+ * @title A Test Suite for the Circle-Relayer Smart Contracts
  */
 contract CircleRelayerTest is Test {
-    // guardian private key for simulated signing of Wormhole messages
-    uint256 guardianSigner;
+    using BytesLib for bytes;
 
-    // contract instances
+    // USDC
+    IUSDC usdc;
+
+    // dependencies
+    WormholeSimulator wormholeSimulator;
     IWormhole wormhole;
-    WormholeSimulator public wormholeSimulator;
+
+    // Circle relayer contract
+    ICircleRelayer relayer;
+
+    /// @notice Mints USDC to this contract
+    function mintUSDC(uint256 amount) public {
+        require(
+            amount <= type(uint256).max - usdc.totalSupply(),
+            "total supply overflow"
+        );
+        usdc.mint(address(this), amount);
+    }
+
+    /// @notice Sets up the wormholeSimulator contracts
+    function setupWormhole() public {
+        // Set up this chain's Wormhole
+        wormholeSimulator = new WormholeSimulator(
+            vm.envAddress("TESTING_WORMHOLE_ADDRESS"),
+            uint256(vm.envBytes32("TESTING_DEVNET_GUARDIAN")));
+        wormhole = wormholeSimulator.wormhole();
+    }
 
     /**
-     * @notice Sets up the wormholeSimulator contracts, which can be used to simulate
-     * attesting Wormhole messages.
+     * @notice Takes control of USDC master minter and USDC tokens
+     * to this test contract.
      */
-    function setUp() public {
-        // verify that we're using the correct fork (AVAX mainnet in this case)
-        require(block.chainid == vm.envUint("TESTING_FORK_CHAINID"), "wrong evm");
+    function setupUSDC() public {
+        usdc = IUSDC(vm.envAddress("TESTING_USDC_TOKEN_ADDRESS"));
 
-        // this will be used to sign Wormhole messages
-        guardianSigner = uint256(vm.envBytes32("TESTING_DEVNET_GUARDIAN"));
-
-        // set up Wormhole using Wormhole existing on AVAX mainnet
-        wormholeSimulator = new WormholeSimulator(vm.envAddress("TESTING_WORMHOLE_ADDRESS"), guardianSigner);
-
-        // we may need to interact with Wormhole throughout the test
-        wormhole = wormholeSimulator.wormhole();
-
-        // verify Wormhole state from fork
-        require(wormhole.chainId() == uint16(vm.envUint("TESTING_WORMHOLE_CHAINID")), "wrong chainId");
-        require(wormhole.messageFee() == vm.envUint("TESTING_WORMHOLE_MESSAGE_FEE"), "wrong messageFee");
-        require(
-            wormhole.getCurrentGuardianSetIndex() == uint32(vm.envUint("TESTING_WORMHOLE_GUARDIAN_SET_INDEX")),
-            "wrong guardian set index"
+        (, bytes memory queriedDecimals) = address(usdc).staticcall(
+            abi.encodeWithSignature("decimals()")
         );
+        uint8 decimals = abi.decode(queriedDecimals, (uint8));
+        require(decimals == 6, "wrong USDC");
+
+        // spoof .configureMinter() call with the master minter account
+        // allow this test contract to mint USDC
+        vm.prank(usdc.masterMinter());
+        usdc.configureMinter(address(this), type(uint256).max);
+
+        uint256 amount = 42069;
+        mintUSDC(amount);
+        require(usdc.balanceOf(address(this)) == amount);
+    }
+
+    /// @notice Deploys CircleRelayer proxy contract and sets the initial state
+    function setupCircleRelayer() public {
+        // deploy Setup
+        CircleRelayerSetup setup = new CircleRelayerSetup();
+
+        // deploy Implementation
+        CircleRelayerImplementation implementation =
+            new CircleRelayerImplementation();
+
+        // deploy Proxy
+        CircleRelayerProxy proxy = new CircleRelayerProxy(
+            address(setup),
+            abi.encodeWithSelector(
+                bytes4(
+                    keccak256("setup(address,uint16,address,uint8,address)")
+                ),
+                address(implementation),
+                uint16(wormhole.chainId()),
+                address(wormhole),
+                uint8(1), // finality
+                vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS")
+            )
+        );
+
+        relayer = ICircleRelayer(address(proxy));
+    }
+
+    function setUp() public {
+        // set up circle contracts (transferring ownership to address(this), etc)
+        setupUSDC();
+
+        // set up wormhole simulator
+        setupWormhole();
+
+        // now our contract
+        setupCircleRelayer();
     }
 }
