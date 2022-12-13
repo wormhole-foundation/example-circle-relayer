@@ -41,12 +41,13 @@ contract ContractScript is Script {
         proxy = new CircleRelayerProxy(
             address(setup),
             abi.encodeWithSelector(
-                bytes4(keccak256("setup(address,uint16,address,uint8,address)")),
+                bytes4(keccak256("setup(address,uint16,address,uint8,address,uint256)")),
                 address(implementation),
                 wormhole.chainId(),
                 address(wormhole),
                 uint8(1), // finality
-                address(circleIntegration)
+                address(circleIntegration),
+                1e8 // initial swap rate precision
             )
         );
 

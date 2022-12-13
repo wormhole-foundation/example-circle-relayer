@@ -90,17 +90,28 @@ contract CircleRelayerTest is Test {
             address(setup),
             abi.encodeWithSelector(
                 bytes4(
-                    keccak256("setup(address,uint16,address,uint8,address)")
+                    keccak256("setup(address,uint16,address,uint8,address,uint256)")
                 ),
                 address(implementation),
                 uint16(wormhole.chainId()),
                 address(wormhole),
                 uint8(1), // finality
-                vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS")
+                vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
+                1e8 // initial swap rate precision
             )
         );
-
         relayer = ICircleRelayer(address(proxy));
+
+        // verify initial state
+        assertEq(relayer.isInitialized(address(implementation)), true);
+        assertEq(relayer.chainId(), wormhole.chainId());
+        assertEq(address(relayer.wormhole()), address(wormhole));
+        assertEq(relayer.wormholeFinality(), uint8(1));
+        assertEq(
+            address(relayer.circleIntegration()),
+            vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS")
+        );
+        assertEq(relayer.nativeSwapRatePrecision(), 1e8);
     }
 
     function setUp() public {
@@ -112,5 +123,14 @@ contract CircleRelayerTest is Test {
 
         // now our contract
         setupCircleRelayer();
+    }
+
+    /// @notice Converts 20-byte addresses to bytes32 (zero-left-padded)
+    function addressToBytes32(address address_) public pure returns (bytes32) {
+        return bytes32(uint256(uint160(address_)));
+    }
+
+    function testPlaceHolder() public pure {
+        return;
     }
 }

@@ -41,9 +41,11 @@ interface ICircleRelayer {
 
     function updateRelayerFee(uint16 chainId_, address token, uint256 amount) external;
 
-    function updateNativeSwapRate(address token, uint256 swapRate) external;
+    function updateNativeSwapRate(uint16 chainId_, address token, uint256 swapRate) external;
 
-    function updateMaxSwapAmount(address token, uint256 maxAmount) external;
+    function updateNativeSwapRatePrecision(uint16 chainId_, uint256 nativeSwapRatePrecision_) external;
+
+    function updateMaxSwapAmount(uint16 chainId_, address token, uint256 maxAmount) external;
 
     function owner() external view returns (address);
 

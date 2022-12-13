@@ -13,8 +13,11 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     event OwnershipTransfered(address indexed oldOwner, address indexed newOwner);
 
     /// @notice `upgrade` serves to upgrade contract implementations
-    function upgrade(uint16 chainId_, address newImplementation) public onlyOwner {
-        require(chainId_ == chainId(), "wrong chain");
+    function upgrade(
+        uint16 chainId_,
+        address newImplementation
+    ) public onlyOwner checkChain(chainId_) {
+        require(newImplementation != address(0), "invalid implementation");
 
         address currentImplementation = _getImplementation();
 
@@ -34,8 +37,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     function updateWormholeFinality(
         uint16 chainId_,
         uint8 newWormholeFinality
-    ) public onlyOwner {
-        require(chainId_ == chainId(), "wrong chain");
+    ) public onlyOwner checkChain(chainId_) {
         require(newWormholeFinality > 0, "invalid wormhole finality");
 
         uint8 currentWormholeFinality = wormholeFinality();
@@ -52,8 +54,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     function submitOwnershipTransferRequest(
         uint16 chainId_,
         address newOwner
-    ) public onlyOwner {
-        require(chainId_ == chainId(), "wrong chain");
+    ) public onlyOwner checkChain(chainId_) {
         require(newOwner != address(0), "newOwner cannot equal address(0)");
 
         setPendingOwner(newOwner);
@@ -80,7 +81,10 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
         emit OwnershipTransfered(currentOwner, newOwner);
     }
 
-    /// @notice `registerContract` serves to save trusted circle relayer contract addresses
+    /**
+     * @notice `registerContract` serves to save trusted circle relayer contract
+     * addresses.
+     */
     function registerContract(
         uint16 chainId_,
         bytes32 contractAddress
@@ -88,11 +92,14 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
         // sanity check both input arguments
         require(
             contractAddress != bytes32(0),
-            "emitterAddress cannot equal bytes32(0)"
+            "contractAddress cannot equal bytes32(0)"
         );
-        require(chainId_ != 0, "chainId must be > 0");
+        require(
+            chainId_ != 0 && chainId_ != chainId(),
+            "chainId_ cannot equal 0 or this chainId"
+        );
 
-        // update the registeredEmitters state variable
+        // update the registeredContracts state variable
         _registerContract(chainId_, contractAddress);
     }
 
@@ -105,23 +112,43 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
         address token,
         uint256 amount
     ) public onlyOwner {
+        require(
+            (chainId_ == chainId()) ||
+            getRegisteredContract(chainId_) != bytes32(0),
+            "contract doesn't exist"
+        );
+        require(
+            circleIntegration().isAcceptedToken(token),
+            "token not accepted"
+        );
         setRelayerFee(chainId_, token, amount);
     }
 
     /**
      * @notice `updateNativeSwapRate` serves to update the the swap rate of the native
      * asset price on this chain and the price of CircleIntegration supported assets.
-     * The swapRate has a precision of 1e8. For example, for a swap rate of 1.5,
+     * For example, for a swap rate of 1.5,
      * the swapRate argument should be 150000000.
      */
     function updateNativeSwapRate(
+        uint16 chainId_,
         address token,
         uint256 swapRate
-    ) public onlyOwner {
+    ) public onlyOwner checkChain(chainId_) {
         require(circleIntegration().isAcceptedToken(token), "token not accepted");
-        require(swapRate > 0, "swap rate must be positive");
+        require(swapRate > 0, "swap rate must be nonzero");
 
         setNativeSwapRate(token, swapRate);
+    }
+
+    /// @notice write update swap rate precision
+    function updateNativeSwapRatePrecision(
+        uint16 chainId_,
+        uint256 nativeSwapRatePrecision_
+    ) public onlyOwner checkChain(chainId_) {
+        require(nativeSwapRatePrecision_ > 0, "precision must be > 0");
+
+        setNativeSwapRatePrecision(nativeSwapRatePrecision_);
     }
 
     /**
@@ -129,14 +156,22 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
      * the contract will pay to the target recipient.
      */
     function updateMaxSwapAmount(
+        uint16 chainId_,
         address token,
         uint256 maxAmount
-    ) public onlyOwner {
+    ) public onlyOwner checkChain(chainId_) {
+        require(circleIntegration().isAcceptedToken(token), "token not accepted");
+
         setMaxSwapAmount(token, maxAmount);
     }
 
     modifier onlyOwner() {
         require(owner() == msg.sender, "caller not the owner");
+        _;
+    }
+
+    modifier checkChain(uint16 chainId_) {
+        require(chainId() == chainId_, "wrong chain");
         _;
     }
 }
