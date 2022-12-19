@@ -24,7 +24,7 @@ contract CircleRelayerStorage {
         // address of the trusted Circle Integration contract on this chain
         address circleIntegration;
 
-        // precision of the nativeSwapRates
+        // precision of the nativeSwapRates, this value should NEVER be set to zero
         uint256 nativeSwapRatePrecision;
 
         // mapping of chainId to source token address to relayerFee

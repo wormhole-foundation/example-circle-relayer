@@ -7,6 +7,7 @@ interface IUSDC {
     function masterMinter() external view returns (address);
     function owner() external view returns (address);
     function blacklister() external view returns (address);
+    function minterAllowance() external view returns (uint256);
 
     // IERC20
     function totalSupply() external view returns (uint256);

@@ -23,7 +23,11 @@ interface ICircleRelayer {
 
     function redeemTokens(ICircleIntegration.RedeemParameters memory redeemParams) external payable;
 
-     function calculateMaxSwapAmount(address token) external view returns (uint256);
+    function encodeTransferTokensWithRelay(TransferTokensWithRelay memory transfer) external pure returns (bytes memory);
+
+    function decodeTransferTokensWithRelay(bytes memory encoded) external pure returns (TransferTokensWithRelay memory transfer);
+
+    function calculateMaxSwapAmount(address token) external view returns (uint256);
 
     function calculateNativeSwapAmount(address token, uint256 toNativeAmount) external view returns (uint256);
 

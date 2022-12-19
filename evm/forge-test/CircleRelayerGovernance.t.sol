@@ -6,6 +6,7 @@ import "forge-std/console.sol";
 
 import {BytesLib} from "../src/libraries/BytesLib.sol";
 import {WormholeSimulator} from "wormhole-solidity/WormholeSimulator.sol";
+import {ForgeHelpers} from "wormhole-solidity/ForgeHelpers.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -22,7 +23,7 @@ import {CircleRelayerProxy} from "../src/circle-relayer/CircleRelayerProxy.sol";
 /**
  * @title A Test Suite for the Circle-Relayer Smart Contracts
  */
-contract CircleRelayerGovernanceTest is Test {
+contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     using BytesLib for bytes;
 
     // USDC
@@ -127,35 +128,6 @@ contract CircleRelayerGovernanceTest is Test {
         setupCircleRelayer();
     }
 
-    /// @notice Converts 20-byte addresses to bytes32 (zero-left-padded)
-    function addressToBytes32(address address_) public pure returns (bytes32) {
-        return bytes32(uint256(uint160(address_)));
-    }
-
-    /**
-     * @notice Low-level calls external contract and expects a failure of a
-     * specified type.
-     * @dev reverts if the expected failure does not occur.
-     */
-    function expectRevert(
-        address contractAddress,
-        bytes memory encodedSignature,
-        string memory expectedRevert
-    ) public {
-        (bool success, bytes memory result) = contractAddress.call(
-            encodedSignature
-        );
-        require(!success, "call did not revert");
-
-        // compare revert strings
-        bytes32 expectedRevertHash = keccak256(abi.encode(expectedRevert));
-        bytes32 actualRevertHash = keccak256(result.slice(4, result.length - 4));
-        require(
-             expectedRevertHash == actualRevertHash,
-            "call did not revert as expected"
-        );
-    }
-
     /**
      * @notice This test confirms that the owner can correctly upgrade the
      * contract impementation.
@@ -220,7 +192,7 @@ contract CircleRelayerGovernanceTest is Test {
         // prank the caller address to something different than the owner's
         vm.startPrank(address(wormholeSimulator));
 
-        // expect the updrade call to fail
+        // expect the upgrade call to fail
         bytes memory encodedSignature = abi.encodeWithSignature(
             "upgrade(uint16,address)",
             relayer.chainId(),
@@ -243,7 +215,7 @@ contract CircleRelayerGovernanceTest is Test {
         // deploy implementation and upgrade the contract
         address implementation = address(0);
 
-        // expect the updrade call to fail
+        // expect the upgrade call to fail
         bytes memory encodedSignature = abi.encodeWithSignature(
             "upgrade(uint16,address)",
             relayer.chainId(),
