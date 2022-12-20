@@ -20,14 +20,34 @@ make dependencies
 make build
 ```
 
-## Testnet Contract Deployment
+## Testing Environment
 
-Before deploying the contracts, set the `Deployment Variables` in the following files:
+The testing environments can be found in the following locations:
+
+- [Unit Tests](https://github.com/wormhole-foundation/example-circle-relayer/blob/main/evm/forge-test/CircleRelayer.t.sol)
+- [Integration Tests](https://github.com/wormhole-foundation/example-circle-relayer/tree/main/evm/ts-test)
+
+First, set the `RPC` variable in `evm/env/testing.env`. Then run the tests with the following commands:
+
+```
+# solidity-based unit tests
+make unit-test
+
+# local-validator integration tests written in typescript
+make integration-test
+
+# unit tests and local-validator integration tests
+make test
+```
+
+## Contract Deployment
+
+Before deploying the contracts, set the `Deployment Variables` and `RPC` in the following environment files:
 
 - `evm/env/avax-fuji-testnet.env`
 - `evm/env/eth-goerli-testnet.env`
 
-Then deploy the contracts to testnet by executing the following commands:
+Then deploy the contracts by executing the following commands:
 
 ```
 
@@ -39,44 +59,44 @@ Then deploy the contracts to testnet by executing the following commands:
 
 ```
 
-## Testnet Contract Registration
+Make sure to deploy all contracts (save the contract addresses) before moving onto the `Initial Contract Setup` section of this README.md.
 
-After deploying the contracts, set the `Contract Registration Environment Variables` in the following files:
+## Initial Contract Setup
+
+After deploying the contracts set the `Initial Setup Variables` in the following files:
 
 - `evm/env/avax-fuji-testnet.env`
 - `evm/env/eth-goerli-testnet.env`
 
-Then register the contracts by executing the following commands:
+Then perform the initial contract setup by executing the following commands:
 
 ```
 # goerli
-. env/eth-goerli-testnet.env && PRIVATE_KEY=put_your_private_key_here bash shell-scripts/register_contracts.sh
+. env/eth-goerli-testnet.env && PRIVATE_KEY=put_your_private_key_here bash shell-scripts/setup_circle_relayer.sh
 
 # fuji
-. env/avax-fuji-testnet.env && PRIVATE_KEY=put_your_private_key_here bash shell-scripts/register_contracts.sh
+. env/avax-fuji-testnet.env && PRIVATE_KEY=put_your_private_key_here bash shell-scripts/setup_circle_relayer.sh
 ```
 
-## Testing Environment
+## Contract Upgrades
 
-There are currently no solidity-based units tests or local-validator integration tests written to support the Circle-Relayer contracts. However, the testing environments have been set up, and we encourage integrators to thoroughly test the contracts before deploying to mainnet. The testing environments can be found in the following locations:
-
-- [Unit Tests](https://github.com/wormhole-foundation/example-circle-relayer/blob/main/evm/forge-test/CircleRelayer.t.sol)
-- [Integration Tests](https://github.com/wormhole-foundation/example-circle-relayer/tree/main/evm/ts-test)
-
-Once tests have been written, they can be executed with the following commands:
+Set the `SOURCE_RELAYER_CONTRACT_ADDRESS` in the environment file to the deployed proxy contract address. Run `make build` to compile the new implementation and execute the relevant command below:
 
 ```
-# unit tests
-make unit-test
+# goerli
+. env/eth-goerli-testnet.env && PRIVATE_KEY=put_your_private_key_here bash shell-scripts/upgrade_circle_relayer.sh
 
-# local-validator integration tests
-make integration-test
-
-# unit tests and local-validator integration tests
-make test
+# fuji
+. env/avax-fuji-testnet.env && PRIVATE_KEY=put_your_private_key_here bash shell-scripts/upgrade_circle_relayer.sh
 ```
 
 ## Relayer
+
+Copy the sample `.env` file in the `relayer` directory and set the values:
+
+```
+cp .env.sample .env
+```
 
 To run the off-chain relayer process, check that the contract addresses are correct in the `relayer/src/main.ts` file, then run the following commands:
 
