@@ -1,7 +1,11 @@
-anvil.log
+anvil*.log
 cache
 lib
 node_modules
 out
 broadcast
+broadcast-test
+yarn-error.log
+foundry-test.toml
 forge-scripts/deploy.out
+deploy.out
