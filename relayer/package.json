@@ -1,7 +1,8 @@
 {
   "scripts": {
     "build": "tsc",
-    "start": "node lib/main.js"
+    "start-circle-relayer": "node lib/circleRelayer/main.js",
+    "start-price-relayer": "node lib/priceRelayer/main.js"
   },
   "dependencies": {
     "@certusone/wormhole-sdk": "^0.9.0",

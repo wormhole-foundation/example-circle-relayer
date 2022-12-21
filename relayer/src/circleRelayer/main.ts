@@ -13,19 +13,22 @@ import {TypedEvent} from "@certusone/wormhole-sdk/lib/cjs/ethers-contracts/commo
 import {AxiosResponse} from "axios";
 import {Contract, ethers, Wallet} from "ethers";
 import {WebSocketProvider} from "./websocket";
-require("dotenv").config();
 const axios = require("axios"); // import breaks
+
+require("dotenv").config();
 
 const strip0x = (str: string) =>
   str.startsWith("0x") ? str.substring(2) : str;
 
+// shared EVM private key
 const ethKey = process.env.ETH_KEY;
 if (!ethKey) {
   console.error("ETH_KEY is required!");
   process.exit(1);
 }
-const ETH_KEY = new Uint8Array(Buffer.from(strip0x(ethKey), "hex"));
+const PK = new Uint8Array(Buffer.from(strip0x(ethKey), "hex"));
 
+// eth RPC
 const ethRpc = process.env.ETH_RPC;
 if (!ethRpc || !ethRpc.startsWith("ws")) {
   console.error("ETH_RPC is required and must be a websocket!");
@@ -33,6 +36,7 @@ if (!ethRpc || !ethRpc.startsWith("ws")) {
 }
 const ETH_RPC = ethRpc;
 
+// avax RPC
 const avaxRpc = process.env.AVAX_RPC;
 if (!avaxRpc || !avaxRpc.startsWith("ws")) {
   console.error("AVAX_RPC is required and must be a websocket!");
@@ -40,8 +44,8 @@ if (!avaxRpc || !avaxRpc.startsWith("ws")) {
 }
 const AVAX_RPC = avaxRpc;
 
+// supported chains
 const SUPPORTED_CHAINS = [CHAIN_ID_ETH, CHAIN_ID_AVAX];
-
 type SupportedChainId = typeof SUPPORTED_CHAINS[number];
 
 const PROVIDERS = {
@@ -50,8 +54,8 @@ const PROVIDERS = {
 };
 
 const SIGNERS = {
-  [CHAIN_ID_ETH]: new Wallet(ETH_KEY, PROVIDERS[CHAIN_ID_ETH]),
-  [CHAIN_ID_AVAX]: new Wallet(ETH_KEY, PROVIDERS[CHAIN_ID_AVAX]),
+  [CHAIN_ID_ETH]: new Wallet(PK, PROVIDERS[CHAIN_ID_ETH]),
+  [CHAIN_ID_AVAX]: new Wallet(PK, PROVIDERS[CHAIN_ID_AVAX]),
 };
 
 const CIRCLE_EMITTER_ADDRESSES = {
@@ -90,6 +94,7 @@ const WORMHOLE_CONTRACTS = {
   ),
 };
 
+// testnet guardian host
 const WORMHOLE_RPC_HOSTS = ["https://wormhole-v2-testnet-api.certus.one"];
 
 function findCircleMessageInLogs(
@@ -174,21 +179,32 @@ function handleRelayerEvent(
     }
   >
 ) {
-  console.log("Parsing transaction", typedEvent.transactionHash);
+  console.log(`Parsing transaction: ${typedEvent.transactionHash}`);
   (async () => {
     try {
+      // create payload buffer
       const payloadArray = Buffer.from(ethers.utils.arrayify(payload));
+
+      // parse fromDomain
       const fromDomain = payloadArray.readUInt32BE(65);
       if (!(fromDomain in CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN)) {
-        console.warn(`Unknown fromDomain ${fromDomain}`);
+        console.warn(`Unknown fromDomain: ${fromDomain}`);
         return;
       }
+
+      // cache fromChain ID
       const fromChain = CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN[fromDomain];
+
+      // parse toDomain
       const toDomain = payloadArray.readUInt32BE(69);
       if (!(toDomain in CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN)) {
-        console.warn(`Unknown toDomain ${toDomain}`);
+        console.warn(`Unknown toDomain: ${toDomain}`);
       }
+
+      // cache toChain ID
       const toChain = CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN[toDomain];
+
+      // parse mintRecipient
       const mintRecipient = tryUint8ArrayToNative(
         payloadArray.subarray(81, 113),
         toChain
@@ -205,18 +221,19 @@ function handleRelayerEvent(
 
       if (mintRecipient != USDC_RELAYER[fromChain]) {
         console.warn(
-          `Unknown mintRecipient ${mintRecipient} for chain ${toChain}, terminating relay`
+          `Unknown mintRecipient: ${mintRecipient} for chainId: ${toChain}, terminating relay`
         );
         return;
       }
       console.log(
-        `Processing transaction from ${fromDomain}:${fromChain}:${coalesceChainName(
+        `Processing transaction from ${coalesceChainName(
           fromChain
-        )} to ${toDomain}:${toChain}:${coalesceChainName(toChain)}`
+        )} to ${coalesceChainName(toChain)}`
       );
-      console.log("Fetching receipt...");
+      console.log("Fetching receipt");
       const receipt = await typedEvent.getTransactionReceipt();
-      console.log("Fetching Circle attestation...");
+
+      console.log("Fetching Circle attestation");
       const [circleBridgeMessage, circleAttestation] =
         await handleCircleMessageInLogs(
           receipt.logs,
@@ -224,22 +241,26 @@ function handleRelayerEvent(
         );
       if (circleBridgeMessage === null || circleAttestation === null) {
         throw new Error(
-          `Error parsing receipt for ${typedEvent.transactionHash}`
+          `Error parsing receipt, txhash: ${typedEvent.transactionHash}`
         );
       }
-      console.log("Fetching Wormhole message...");
+      console.log("Fetching Wormhole message");
       const {vaaBytes} = await getSignedVAAWithRetry(
         WORMHOLE_RPC_HOSTS,
         fromChain,
         USDC_WH_EMITTER[fromChain],
         sequence.toString()
       );
-      const transferInfo = [
+
+      // redeem parameters for target function call
+      const redeemParameters = [
         `0x${uint8ArrayToHex(vaaBytes)}`,
         circleBridgeMessage,
         circleAttestation,
       ];
       console.log("All redeem parameters have been located");
+
+      // create target contract instance
       const contract = new Contract(
         USDC_RELAYER[toChain],
         [
@@ -249,7 +270,6 @@ function handleRelayerEvent(
         SIGNERS[toChain]
       );
 
-      console.log("Fetching native asset swap quote");
       // query for native amount to swap with contract
       const nativeSwapQuote = await contract.calculateNativeSwapAmount(
         token,
@@ -261,14 +281,18 @@ function handleRelayerEvent(
         )}`
       );
 
+      // redeem the transfer on the target chain
       const tx: ethers.ContractTransaction = await contract.redeemTokens(
-        transferInfo,
+        redeemParameters,
         {
           value: nativeSwapQuote,
         }
       );
       const redeedReceipt: ethers.ContractReceipt = await tx.wait();
-      console.log("Redeemed in tx", redeedReceipt.transactionHash);
+
+      console.log(
+        `Redeemed transfer in txhash: ${redeedReceipt.transactionHash}`
+      );
     } catch (e) {
       console.error(e);
     }
@@ -284,15 +308,13 @@ function subscribeToEvents(wormhole: ethers.Contract, chainId: 2 | 6) {
     process.exit(1);
   }
 
-  // unsubscribe
+  // unsubscribe and resubscribe to reset websocket connection
   wormhole.off(
     wormhole.filters.LogMessagePublished(sender),
     handleRelayerEvent
   );
-
-  // resubscribe
   wormhole.on(wormhole.filters.LogMessagePublished(sender), handleRelayerEvent);
-  console.log("Subscribed to", chainName, coreContract, sender);
+  console.log(`Subscribed to: ${chainName}, core contract: ${coreContract}`);
 }
 
 async function main(sleepMs: number) {
