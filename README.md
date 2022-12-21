@@ -90,7 +90,7 @@ Set the `SOURCE_RELAYER_CONTRACT_ADDRESS` in the environment file to the deploye
 . env/avax-fuji-testnet.env && PRIVATE_KEY=put_your_private_key_here bash shell-scripts/upgrade_circle_relayer.sh
 ```
 
-## Relayer
+## Off-Chain Circle Relayer
 
 Copy the sample `.env` file in the `relayer` directory and set the values:
 
@@ -98,11 +98,36 @@ Copy the sample `.env` file in the `relayer` directory and set the values:
 cp .env.sample .env
 ```
 
-To run the off-chain relayer process, check that the contract addresses are correct in the `relayer/src/main.ts` file, then run the following commands:
+To run the off-chain relayer process, check that the contract addresses are correct in the `relayer/src/circleRelayer/main.ts` file, then run the following commands:
 
 ```
 cd relayer
 npm ci
 npm run build
-npm run start
+npm run start-circle-relayer
+```
+
+## Off-Chain Price Relayer
+
+Copy the sample `.env` file in the `relayer` directory and set the values (this .env file is shared with the Off-Chain Circle Relayer process):
+
+```
+cp .env.sample .env
+```
+
+Copy the `priceRelayerSample.cfg` file in the `relayer/cfg` directory and set the values:
+
+```
+cp priceRelayerSample.cfg priceRelayer.cfg
+```
+
+To run the off-chain relayer process, check that the contract addresses are correct in the `relayer/src/priceRelayer/main.ts` file, then run the following commands:
+
+```
+# only run these if you haven't already for the off-chain circle relayer
+cd relayer
+npm ci
+
+npm run build
+npm run start-price-relayer
 ```
