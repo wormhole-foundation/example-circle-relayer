@@ -125,10 +125,8 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     }
 
     /**
-     * @notice `updateNativeSwapRate` serves to update the the swap rate of the native
+     * @notice `updateNativeSwapRate` serves to update the swap rate of the native
      * asset price on this chain and the price of CircleIntegration supported assets.
-     * For example, for a swap rate of 1.5,
-     * the swapRate argument should be 150000000.
      */
     function updateNativeSwapRate(
         uint16 chainId_,
