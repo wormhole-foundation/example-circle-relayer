@@ -21,55 +21,35 @@ interface ICircleRelayer {
         bytes32 targetRecipientWallet
     ) external payable returns (uint64 messageSequence);
 
-    function redeemTokens(
-        ICircleIntegration.RedeemParameters memory redeemParams
-    ) external payable;
+    function redeemTokens(ICircleIntegration.RedeemParameters calldata redeemParams) external payable;
 
-     function calculateMaxSwapAmount(
-        address token
-    ) external view returns (uint256);
+    function encodeTransferTokensWithRelay(TransferTokensWithRelay memory transfer) external pure returns (bytes memory);
 
-    function calculateNativeSwapAmount(
-        address token,
-        uint256 toNativeAmount
-    ) external view returns (uint256);
+    function decodeTransferTokensWithRelay(bytes memory encoded) external pure returns (TransferTokensWithRelay memory transfer);
+
+    function calculateMaxSwapAmountIn(address token) external view returns (uint256);
+
+    function calculateNativeSwapAmountOut(address token, uint256 toNativeAmount) external view returns (uint256);
 
     function bytes32ToAddress(bytes32 address_) external pure returns (address);
 
     function upgrade(uint16 chainId_, address newImplementation) external;
 
-    function updateWormholeFinality(
-        uint16 chainId_,
-        uint8 newWormholeFinality
-    ) external;
+    function updateWormholeFinality(uint16 chainId_, uint8 newWormholeFinality) external;
 
-    function submitOwnershipTransferRequest(
-        uint16 chainId_,
-        address newOwner
-    ) external;
+    function submitOwnershipTransferRequest(uint16 chainId_, address newOwner) external;
 
     function confirmOwnershipTransferRequest() external;
 
-    function registerContract(
-        uint16 chainId_,
-        bytes32 contractAddress
-    ) external;
+    function registerContract(uint16 chainId_, bytes32 contractAddress) external;
 
-    function updateRelayerFee(
-        uint16 chainId_,
-        address token,
-        uint256 amount
-    ) external;
+    function updateRelayerFee(uint16 chainId_, address token, uint256 amount) external;
 
-    function updateNativeSwapRate(
-        address token,
-        uint256 swapRate
-    ) external;
+    function updateNativeSwapRate(uint16 chainId_, address token, uint256 swapRate) external;
 
-    function updateMaxSwapAmount(
-        address token,
-        uint256 maxAmount
-    ) external;
+    function updateNativeSwapRatePrecision(uint16 chainId_, uint256 nativeSwapRatePrecision_) external;
+
+    function updateMaxNativeSwapAmount(uint16 chainId_, address token, uint256 maxAmount) external;
 
     function owner() external view returns (address);
 
@@ -91,7 +71,7 @@ interface ICircleRelayer {
 
     function nativeSwapRate(address token) external view returns (uint256);
 
-    function maxSwapAmount(address token) external view returns (uint256);
+    function maxNativeSwapAmount(address token) external view returns (uint256);
 
     function getRegisteredContract(uint16 emitterChainId) external view returns (bytes32);
 }

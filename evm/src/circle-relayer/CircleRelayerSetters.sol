@@ -44,8 +44,8 @@ contract CircleRelayerSetters is CircleRelayerState {
         _state.nativeSwapRates[token] = swapRate;
     }
 
-    function setMaxSwapAmount(address token, uint256 maximum) internal {
-        _state.maxSwapAmount[token] = maximum;
+    function setMaxNativeSwapAmount(address token, uint256 maximum) internal {
+        _state.maxNativeSwapAmount[token] = maximum;
     }
 
     function _registerContract(uint16 chainId_, bytes32 contract_) internal {

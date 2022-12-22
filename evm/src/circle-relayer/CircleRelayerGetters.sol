@@ -47,8 +47,8 @@ contract CircleRelayerGetters is CircleRelayerSetters {
         return _state.nativeSwapRates[token];
     }
 
-    function maxSwapAmount(address token) public view returns (uint256) {
-        return _state.maxSwapAmount[token];
+    function maxNativeSwapAmount(address token) public view returns (uint256) {
+        return _state.maxNativeSwapAmount[token];
     }
 
     function getRegisteredContract(uint16 emitterChainId) public view returns (bytes32) {

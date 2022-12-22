@@ -11,8 +11,9 @@ contract CircleRelayerMessages is CircleRelayerStructs {
     function encodeTransferTokensWithRelay(
         TransferTokensWithRelay memory transfer
     ) public pure returns (bytes memory) {
+        require(transfer.payloadId == 1, "invalid payloadId");
         return abi.encodePacked(
-            uint8(1),
+            transfer.payloadId,
             transfer.targetRelayerFee,
             transfer.toNativeTokenAmount,
             transfer.targetRecipientWallet

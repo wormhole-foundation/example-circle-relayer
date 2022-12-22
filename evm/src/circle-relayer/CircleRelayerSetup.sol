@@ -12,21 +12,21 @@ contract CircleRelayerSetup is CircleRelayerSetters, ERC1967Upgrade, Context {
         uint16 chainId,
         address wormhole,
         uint8 finality,
-        address circleIntegration
+        address circleIntegration,
+        uint256 swapRatePrecision
     ) public {
         require(implementation != address(0), "invalid implementation");
         require(chainId > 0, "invalid chainId");
         require(wormhole != address(0), "invalid wormhole address");
         require(circleIntegration != address(0), "invalid circle integration address");
+        require(swapRatePrecision != 0, "precision must be > 0");
 
         setOwner(_msgSender());
         setChainId(chainId);
         setWormhole(wormhole);
         setWormholeFinality(finality);
         setCircleIntegration(circleIntegration);
-
-        // Set the swapRate precision to 1e8
-        setNativeSwapRatePrecision(1e8);
+        setNativeSwapRatePrecision(swapRatePrecision);
 
         // set the implementation
         _upgradeTo(implementation);

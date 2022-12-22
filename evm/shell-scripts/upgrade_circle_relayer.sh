@@ -1,6 +1,6 @@
 #!/bin/bash
 
-forge script forge-scripts/register_contracts.sol \
+forge script forge-scripts/upgrade_contracts.sol \
     --rpc-url $RPC \
     --private-key $PRIVATE_KEY \
     --broadcast --slow
