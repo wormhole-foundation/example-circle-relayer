@@ -79,11 +79,11 @@ contract ContractScript is Script {
         uint256 maxNativeSwapAmount = vm.envUint("MAX_NATIVE_SWAP_AMOUNT");
 
         // set the initial max native swap amount
-        relayer.updateMaxSwapAmount(wormhole.chainId(), usdc, maxNativeSwapAmount);
+        relayer.updateMaxNativeSwapAmount(wormhole.chainId(), usdc, maxNativeSwapAmount);
 
         // confirm state was updated
         require(
-            relayer.maxSwapAmount(usdc) == maxNativeSwapAmount,
+            relayer.maxNativeSwapAmount(usdc) == maxNativeSwapAmount,
             "max native swap amount incorrect"
         );
     }
