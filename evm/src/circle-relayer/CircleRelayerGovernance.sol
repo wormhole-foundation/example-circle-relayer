@@ -11,6 +11,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     event ContractUpgraded(address indexed oldContract, address indexed newContract);
     event WormholeFinalityUpdated(uint8 indexed oldLevel, uint8 indexed newFinality);
     event OwnershipTransfered(address indexed oldOwner, address indexed newOwner);
+    event SwapRateUpdated(address indexed token, uint256 indexed swapRate);
 
     /// @notice `upgrade` serves to upgrade contract implementations
     function upgrade(
@@ -137,6 +138,8 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
         require(swapRate > 0, "swap rate must be nonzero");
 
         setNativeSwapRate(token, swapRate);
+
+        emit SwapRateUpdated(token, swapRate);
     }
 
     /// @notice write update swap rate precision
@@ -153,14 +156,14 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
      * @notice `updateMaxSwapAmount` serves to update the max amount of native assets the
      * the contract will pay to the target recipient.
      */
-    function updateMaxSwapAmount(
+    function updateMaxNativeSwapAmount(
         uint16 chainId_,
         address token,
         uint256 maxAmount
     ) public onlyOwner checkChain(chainId_) {
         require(circleIntegration().isAcceptedToken(token), "token not accepted");
 
-        setMaxSwapAmount(token, maxAmount);
+        setMaxNativeSwapAmount(token, maxAmount);
     }
 
     modifier onlyOwner() {

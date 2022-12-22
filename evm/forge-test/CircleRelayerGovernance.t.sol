@@ -602,14 +602,14 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         address token = address(usdc);
 
         // update the native to USDC swap rate
-        relayer.updateMaxSwapAmount(
+        relayer.updateMaxNativeSwapAmount(
             relayer.chainId(),
             token,
             maxAmount
         );
 
         // confirm state changes
-        assertEq(relayer.maxSwapAmount(token), maxAmount);
+        assertEq(relayer.maxNativeSwapAmount(token), maxAmount);
     }
 
     /**
@@ -622,9 +622,9 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         address token = address(0);
         uint256 maxAmount = 1e10;
 
-        // expect the updateMaxSwapAmount call to revert
+        // expect the updateMaxNativeSwapAmount call to revert
         bytes memory encodedSignature = abi.encodeWithSignature(
-            "updateMaxSwapAmount(uint16,address,uint256)",
+            "updateMaxNativeSwapAmount(uint16,address,uint256)",
             relayer.chainId(),
             token,
             maxAmount
@@ -647,9 +647,9 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         // prank the caller address to something different than the owner's
         vm.startPrank(address(wormholeSimulator));
 
-        // expect the updateMaxSwapAmount call to revert
+        // expect the updateNativeMaxSwapAmount call to revert
         bytes memory encodedSignature = abi.encodeWithSignature(
-            "updateMaxSwapAmount(uint16,address,uint256)",
+            "updateMaxNativeSwapAmount(uint16,address,uint256)",
             relayer.chainId(),
             token,
             maxAmount
@@ -675,7 +675,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
 
         // expect the updateNativeSwapRate call to revert
         vm.expectRevert("wrong chain");
-        relayer.updateMaxSwapAmount(
+        relayer.updateMaxNativeSwapAmount(
             chainId_,
             token,
             maxAmount

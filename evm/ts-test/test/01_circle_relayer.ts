@@ -195,9 +195,9 @@ describe("Circle Integration Test", () => {
       });
 
       it("Should Set Max Native Swap Amount", async () => {
-        // set the relayer fee for USDC
+        // set the max native swap amount for USDC
         const receipt = await ethCircleRelayer
-          .updateMaxSwapAmount(
+          .updateMaxNativeSwapAmount(
             CHAIN_ID_ETH,
             ethUsdc.address,
             ethMaxNativeSwapAmount
@@ -211,7 +211,7 @@ describe("Circle Integration Test", () => {
         expect(receipt).is.not.null;
 
         // check contract state
-        const maxSwapAmountInState = await ethCircleRelayer.maxSwapAmount(
+        const maxSwapAmountInState = await ethCircleRelayer.maxNativeSwapAmount(
           ethUsdc.address
         );
         expect(maxSwapAmountInState.toString()).to.equal(
@@ -310,9 +310,9 @@ describe("Circle Integration Test", () => {
       });
 
       it("Should Set Max Native Swap Amount", async () => {
-        // set the relayer fee for USDC
+        // set the max native swap amount for USDC
         const receipt = await avaxCircleRelayer
-          .updateMaxSwapAmount(
+          .updateMaxNativeSwapAmount(
             CHAIN_ID_AVAX,
             avaxUsdc.address,
             avaxMaxNativeSwapAmount
@@ -326,9 +326,8 @@ describe("Circle Integration Test", () => {
         expect(receipt).is.not.null;
 
         // check contract state
-        const maxSwapAmountInState = await avaxCircleRelayer.maxSwapAmount(
-          avaxUsdc.address
-        );
+        const maxSwapAmountInState =
+          await avaxCircleRelayer.maxNativeSwapAmount(avaxUsdc.address);
         expect(maxSwapAmountInState.toString()).to.equal(
           avaxMaxNativeSwapAmount.toString()
         );
@@ -441,7 +440,7 @@ describe("Circle Integration Test", () => {
 
         // fetch the native asset swap quote
         const nativeSwapQuote =
-          await avaxCircleRelayer.calculateNativeSwapAmount(
+          await avaxCircleRelayer.calculateNativeSwapAmountOut(
             avaxUsdc.address,
             toNativeTokenAmountEth
           );
@@ -494,7 +493,7 @@ describe("Circle Integration Test", () => {
         );
 
         // fetch the max swap amount
-        const maxSwapAmount = await ethCircleRelayer.maxSwapAmount(
+        const maxSwapAmount = await ethCircleRelayer.maxNativeSwapAmount(
           ethUsdc.address
         );
 
@@ -627,7 +626,7 @@ describe("Circle Integration Test", () => {
 
         // fetch the native asset swap quote
         const nativeSwapQuote =
-          await ethCircleRelayer.calculateNativeSwapAmount(
+          await ethCircleRelayer.calculateNativeSwapAmountOut(
             ethUsdc.address,
             toNativeTokenAmountAvax
           );
@@ -681,7 +680,7 @@ describe("Circle Integration Test", () => {
         );
 
         // fetch the max swap amount
-        const maxSwapAmount = await avaxCircleRelayer.maxSwapAmount(
+        const maxSwapAmount = await avaxCircleRelayer.maxNativeSwapAmount(
           avaxUsdc.address
         );
 
@@ -830,7 +829,7 @@ describe("Circle Integration Test", () => {
 
         // fetch the native asset swap quote
         const nativeSwapQuote =
-          await avaxCircleRelayer.calculateNativeSwapAmount(
+          await avaxCircleRelayer.calculateNativeSwapAmountOut(
             avaxUsdc.address,
             toNativeTokenAmountEth
           );
@@ -891,7 +890,7 @@ describe("Circle Integration Test", () => {
         expect(relayerFeeOnEth.eq("0")).is.true;
 
         // fetch the max swap amount
-        const maxSwapAmount = await ethCircleRelayer.maxSwapAmount(
+        const maxSwapAmount = await ethCircleRelayer.maxNativeSwapAmount(
           ethUsdc.address
         );
 
@@ -1016,7 +1015,7 @@ describe("Circle Integration Test", () => {
 
         // fetch the native asset swap quote
         const nativeSwapQuote =
-          await ethCircleRelayer.calculateNativeSwapAmount(
+          await ethCircleRelayer.calculateNativeSwapAmountOut(
             ethUsdc.address,
             toNativeTokenAmountAvax
           );

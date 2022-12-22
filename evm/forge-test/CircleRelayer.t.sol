@@ -24,6 +24,11 @@ import {CircleRelayerSetup} from "../src/circle-relayer/CircleRelayerSetup.sol";
 import {CircleRelayerImplementation} from "../src/circle-relayer/CircleRelayerImplementation.sol";
 import {CircleRelayerProxy} from "../src/circle-relayer/CircleRelayerProxy.sol";
 
+interface IWETH is IERC20 {
+    function deposit() external payable;
+    function withdraw(uint amount) external;
+}
+
 /**
  * @title A Test Suite for the Circle-Relayer Smart Contracts
  */
@@ -147,7 +152,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
 
         // set the max swap amount to 10 USDC
-        relayer.updateMaxSwapAmount(relayer.chainId(), address(usdc), 1e17);
+        relayer.updateMaxNativeSwapAmount(relayer.chainId(), address(usdc), 1e17);
 
         // verify initial state
         assertEq(relayer.isInitialized(address(implementation)), true);
@@ -193,7 +198,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         relayer.updateNativeSwapRate(relayer.chainId(), token, nativeSwapRate);
 
         // compute the native amount expect
-        uint256 nativeAmount = relayer.calculateNativeSwapAmount(token, toNativeAmount);
+        uint256 nativeAmount = relayer.calculateNativeSwapAmountOut(token, toNativeAmount);
 
         assertEq(nativeAmount, 0);
     }
@@ -211,7 +216,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
 
         // call should revert
         vm.expectRevert("swap rate not set");
-        relayer.calculateNativeSwapAmount(
+        relayer.calculateNativeSwapAmountOut(
             token,
             toNativeTokenAmount
         );
@@ -230,7 +235,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
 
         // call should revert
         vm.expectRevert("swap rate not set");
-        relayer.calculateMaxSwapAmount(
+        relayer.calculateMaxSwapAmountIn(
             token
         );
     }
@@ -339,13 +344,17 @@ contract CircleRelayerTest is Test, ForgeHelpers {
 
     /**
      * @notice This test confirms that the `transferTokensWithRelay` method reverts
-     * when the token is not registered.
+     * when the token is not registered. Need to test this method with a real ERC20
+     * token to test the correct require statement.
      */
-    function testTransferTokensWithRelayInvalidToken(address token) public {
-        vm.assume(token != address(0) && token != address(usdc));
+    function testTransferTokensWithRelayInvalidToken() public {
+        address token = vm.envAddress("WETH_ADDRESS");
 
-        uint256 amount = 1e10;
+        uint256 amount = 1e18;
         uint256 toNativeTokenAmount = 1e6;
+
+        // wrap some eth
+        IWETH(token).deposit{value: amount}();
 
         // register the target contract
         relayer.registerContract(targetChain, targetContract);
@@ -355,7 +364,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
 
         // approve the circle relayer to spend tokesn
         SafeERC20.safeApprove(
-            IERC20(address(usdc)),
+            IERC20(token),
             address(relayer),
             amount
         );
@@ -439,6 +448,114 @@ contract CircleRelayerTest is Test, ForgeHelpers {
             toNativeTokenAmount,
             targetChain,
             addressToBytes32(address(this))
+        );
+    }
+
+    /**
+     * @notice This test confirms that the `transferTokensWithRelay` method reverts
+     * when the amount is zero.
+     */
+    function testTransferTokensWithRelayZeroAmount(
+        uint256 amount,
+        uint256 toNativeTokenAmount
+    ) public {
+        vm.assume(amount == 0);
+        vm.assume(
+            amount < toNativeTokenAmount + relayer.relayerFee(
+                targetChain, address(usdc)
+            )
+        );
+
+        // register the target contract
+        relayer.registerContract(targetChain, targetContract);
+
+        // approve the circle relayer to spend tokesn
+        SafeERC20.safeApprove(
+            IERC20(address(usdc)),
+            address(relayer),
+            amount
+        );
+
+        // the transferTokensWithRelay call should revert
+        vm.expectRevert("amount must be > 0");
+        relayer.transferTokensWithRelay(
+            address(usdc),
+            amount,
+            toNativeTokenAmount,
+            targetChain,
+            addressToBytes32(address(this))
+        );
+    }
+
+    /**
+     * @notice This test confirms that the `transferTokensWithRelay` method reverts
+     * when the token address is address(0).
+     */
+    function testTransferTokensWithRelayZeroAddress(
+        uint256 amount,
+        uint256 toNativeTokenAmount
+    ) public {
+        vm.assume(amount > 0 && amount < usdc.totalSupply());
+        vm.assume(
+            amount < toNativeTokenAmount + relayer.relayerFee(
+                targetChain, address(usdc)
+            )
+        );
+
+        // register the target contract
+        relayer.registerContract(targetChain, targetContract);
+
+        // approve the circle relayer to spend tokesn
+        SafeERC20.safeApprove(
+            IERC20(address(usdc)),
+            address(relayer),
+            amount
+        );
+
+        // the transferTokensWithRelay call should revert
+        vm.expectRevert("token cannot equal address(0)");
+        relayer.transferTokensWithRelay(
+            address(0),
+            amount,
+            toNativeTokenAmount,
+            targetChain,
+            addressToBytes32(address(this))
+        );
+    }
+
+    /**
+     * @notice This test confirms that the `transferTokensWithRelay` method reverts
+     * when the targetRecipientWallet address is bytes32(0).
+     */
+    function testTransferTokensWithRelayInvalidRecipientAddress(
+        uint256 amount,
+        uint256 toNativeTokenAmount
+    ) public {
+        vm.assume(amount > 0 && amount < usdc.totalSupply());
+        vm.assume(
+            amount < toNativeTokenAmount + relayer.relayerFee(
+                targetChain, address(usdc)
+            )
+        );
+
+        // register the target contract
+        relayer.registerContract(targetChain, targetContract);
+
+        // approve the circle relayer to spend tokesn
+        SafeERC20.safeApprove(
+            IERC20(address(usdc)),
+            address(relayer),
+            amount
+        );
+
+        // the transferTokensWithRelay call should revert
+        vm.expectRevert("invalid target recipient");
+        relayer.transferTokensWithRelay(
+            address(usdc),
+            amount,
+            toNativeTokenAmount,
+            targetChain,
+            bytes32(0)
         );
     }
 
@@ -791,7 +908,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         ethBalances.recipientBefore = recipientWallet.balance;
 
         // get a quote from the contract for the native gas swap
-        uint256 nativeGasQuote = relayer.calculateNativeSwapAmount(
+        uint256 nativeGasQuote = relayer.calculateNativeSwapAmountOut(
             address(usdc),
             toNativeTokenAmount
         );
@@ -821,7 +938,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
          * Overwrite the toNativeTokenAmount if the value is larger than
          * the max swap amount. The contract executes the same instruction.
          */
-        uint256 maxToNative = relayer.calculateMaxSwapAmount(address(usdc));
+        uint256 maxToNative = relayer.calculateMaxSwapAmountIn(address(usdc));
         if (toNativeTokenAmount > maxToNative) {
             toNativeTokenAmount = maxToNative;
         }
@@ -846,14 +963,14 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
 
         // validate eth balances
-        uint256 maxSwapAmount = relayer.maxSwapAmount(address(usdc));
+        uint256 maxNativeSwapAmount = relayer.maxNativeSwapAmount(address(usdc));
         assertEq(
             ethBalances.recipientAfter - ethBalances.recipientBefore,
-            nativeGasQuote > maxSwapAmount ? maxSwapAmount : nativeGasQuote
+            nativeGasQuote > maxNativeSwapAmount ? maxNativeSwapAmount : nativeGasQuote
         );
         assertEq(
             ethBalances.relayerBefore - ethBalances.relayerAfter,
-            nativeGasQuote > maxSwapAmount ? maxSwapAmount : nativeGasQuote
+            nativeGasQuote > maxNativeSwapAmount ? maxNativeSwapAmount : nativeGasQuote
         );
     }
 
@@ -1230,7 +1347,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         relayer.registerContract(targetChain, targetContract);
 
         // get a quote from the contract for the native gas swap
-        uint256 nativeGasQuote = relayer.calculateNativeSwapAmount(
+        uint256 nativeGasQuote = relayer.calculateNativeSwapAmountOut(
             address(usdc),
             toNativeTokenAmount
         );
@@ -1325,7 +1442,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         relayer.registerContract(targetChain, targetContract);
 
         // get a quote from the contract for the native gas swap
-        uint256 nativeGasQuote = relayer.calculateNativeSwapAmount(
+        uint256 nativeGasQuote = relayer.calculateNativeSwapAmountOut(
             address(usdc),
             toNativeTokenAmount
         );

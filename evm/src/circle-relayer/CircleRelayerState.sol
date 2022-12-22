@@ -34,7 +34,7 @@ contract CircleRelayerStorage {
         mapping(address => uint256) nativeSwapRates;
 
         // mapping of source token address to maximum native asset swap amount allowed
-        mapping(address => uint256) maxSwapAmount;
+        mapping(address => uint256) maxNativeSwapAmount;
 
         // mapping of initialized implementations
         mapping(address => bool) initializedImplementations;

@@ -21,15 +21,15 @@ interface ICircleRelayer {
         bytes32 targetRecipientWallet
     ) external payable returns (uint64 messageSequence);
 
-    function redeemTokens(ICircleIntegration.RedeemParameters memory redeemParams) external payable;
+    function redeemTokens(ICircleIntegration.RedeemParameters calldata redeemParams) external payable;
 
     function encodeTransferTokensWithRelay(TransferTokensWithRelay memory transfer) external pure returns (bytes memory);
 
     function decodeTransferTokensWithRelay(bytes memory encoded) external pure returns (TransferTokensWithRelay memory transfer);
 
-    function calculateMaxSwapAmount(address token) external view returns (uint256);
+    function calculateMaxSwapAmountIn(address token) external view returns (uint256);
 
-    function calculateNativeSwapAmount(address token, uint256 toNativeAmount) external view returns (uint256);
+    function calculateNativeSwapAmountOut(address token, uint256 toNativeAmount) external view returns (uint256);
 
     function bytes32ToAddress(bytes32 address_) external pure returns (address);
 
@@ -49,7 +49,7 @@ interface ICircleRelayer {
 
     function updateNativeSwapRatePrecision(uint16 chainId_, uint256 nativeSwapRatePrecision_) external;
 
-    function updateMaxSwapAmount(uint16 chainId_, address token, uint256 maxAmount) external;
+    function updateMaxNativeSwapAmount(uint16 chainId_, address token, uint256 maxAmount) external;
 
     function owner() external view returns (address);
 
@@ -71,7 +71,7 @@ interface ICircleRelayer {
 
     function nativeSwapRate(address token) external view returns (uint256);
 
-    function maxSwapAmount(address token) external view returns (uint256);
+    function maxNativeSwapAmount(address token) external view returns (uint256);
 
     function getRegisteredContract(uint16 emitterChainId) external view returns (bytes32);
 }
