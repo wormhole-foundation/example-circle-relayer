@@ -59,8 +59,8 @@ const SIGNERS = {
 };
 
 const CIRCLE_EMITTER_ADDRESSES = {
-  [CHAIN_ID_ETH]: "0x40A61D3D2AfcF5A5d31FcDf269e575fB99dd87f7",
-  [CHAIN_ID_AVAX]: "0x52FfFb3EE8Fa7838e9858A2D5e454007b9027c3C",
+  [CHAIN_ID_ETH]: "0x26413e8157CD32011E726065a5462e97dD4d03D9",
+  [CHAIN_ID_AVAX]: "0xa9fB1b3009DCb79E2fe346c16a604B8Fa8aE0a79",
 };
 
 const USDC_RELAYER = {
@@ -265,7 +265,7 @@ function handleRelayerEvent(
         USDC_RELAYER[toChain],
         [
           "function redeemTokens((bytes,bytes,bytes)) payable",
-          "function calculateNativeSwapAmountOut(address,uint256) view returns (uint256)",
+          "function calculateNativeSwapAmountIn(address,uint256) view returns (uint256)",
         ],
         SIGNERS[toChain]
       );
