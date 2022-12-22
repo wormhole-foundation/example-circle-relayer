@@ -265,13 +265,13 @@ function handleRelayerEvent(
         USDC_RELAYER[toChain],
         [
           "function redeemTokens((bytes,bytes,bytes)) payable",
-          "function calculateNativeSwapAmountIn(address,uint256) view returns (uint256)",
+          "function calculateNativeSwapAmountOut(address,uint256) view returns (uint256)",
         ],
         SIGNERS[toChain]
       );
 
       // query for native amount to swap with contract
-      const nativeSwapQuote = await contract.calculateNativeSwapAmountIn(
+      const nativeSwapQuote = await contract.calculateNativeSwapAmountOut(
         token,
         toNativeAmount
       );
