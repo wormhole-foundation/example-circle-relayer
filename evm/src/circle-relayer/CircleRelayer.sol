@@ -39,14 +39,17 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         uint16 targetChain,
         bytes32 targetRecipientWallet
     ) public payable nonReentrant returns (uint64 messageSequence) {
-        // cache circle integration instance
-        ICircleIntegration integration = circleIntegration();
+        // sanity check input values
+        require(amount > 0, "amount must be > 0");
+        require(targetRecipientWallet != bytes32(0), "invalid target recipient");
+        require(token != address(0), "token cannot equal address(0)");
 
-        // check to see if token is accepted by the circle integration contract
-        require(integration.isAcceptedToken(token), "token not accepted");
-
-        // confirm that the user sent enough value to cover wormhole's message fee
-        require(msg.value == wormhole().messageFee(), "insufficient value");
+        // cache the target contract address
+        bytes32 targetContract = getRegisteredContract(targetChain);
+        require(
+            targetContract != bytes32(0),
+            "CIRCLE-RELAYER: target not registered"
+        );
 
         // transfer the token to this contract
         uint256 amountReceived = custodyTokens(token, amount);
@@ -65,6 +68,9 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
             targetRecipientWallet: targetRecipientWallet
         });
 
+        // cache circle integration instance
+        ICircleIntegration integration = circleIntegration();
+
         // approve the circle integration contract to spend tokens
         SafeERC20.safeApprove(
             IERC20(token),
@@ -78,7 +84,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
                 token: token,
                 amount: amount,
                 targetChain: targetChain,
-                mintRecipient: getRegisteredContract(targetChain)
+                mintRecipient: targetContract
             }),
             0, // batchId = 0 to opt out of batching
             encodeTransferTokensWithRelay(transferMessage)
@@ -94,13 +100,17 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
      * and Circle transfer attestation.
      */
     function redeemTokens(
-        ICircleIntegration.RedeemParameters memory redeemParams
-    ) public payable nonReentrant {
+        ICircleIntegration.RedeemParameters calldata redeemParams
+    ) public payable {
         // cache circle integration instance
         ICircleIntegration integration = circleIntegration();
 
-        // mint USDC to this contract
-        ICircleIntegration.DepositWithPayload memory deposit = 
+        /**
+         * Mint USDC to this contract. Serves as a reentrancy protection,
+         * since the CircleIntegration contract will not allow the wormhole
+         * message in the redeemParams to be replayed.
+         */
+        ICircleIntegration.DepositWithPayload memory deposit =
             integration.redeemTokensWithPayload(redeemParams);
 
         // parse the additional instructions from the deposit message
@@ -120,6 +130,22 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         address token = bytes32ToAddress(deposit.token);
         address recipient = bytes32ToAddress(transferMessage.targetRecipientWallet);
 
+        // If the recipient is self redeeming, send the full token amount to
+        // the recipient. Revert if they attempt to send ether to this contract.
+        if (msg.sender == recipient) {
+            require(msg.value == 0, "recipient cannot swap native assets");
+
+            // transfer the full token amount to the recipient
+            SafeERC20.safeTransfer(
+                IERC20(token),
+                recipient,
+                deposit.amount
+            );
+
+            // bail out
+            return;
+        }
+
         // handle native asset payments and refunds
         if (transferMessage.toNativeTokenAmount > 0) {
             /**
@@ -132,13 +158,13 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
              * Compute the amount of native assets to send the recipient.
              */
             uint256 nativeAmountForRecipient;
-            uint256 maxToNativeAllowed = calculateMaxSwapAmount(token);
+            uint256 maxToNativeAllowed = calculateMaxSwapAmountIn(token);
             if (transferMessage.toNativeTokenAmount > maxToNativeAllowed) {
                 transferMessage.toNativeTokenAmount = maxToNativeAllowed;
-                nativeAmountForRecipient = maxSwapAmount(token);
+                nativeAmountForRecipient = maxNativeSwapAmount(token);
             } else {
                 // compute amount of native asset to pay the recipient
-                nativeAmountForRecipient = calculateNativeSwapAmount(
+                nativeAmountForRecipient = calculateNativeSwapAmountOut(
                     token,
                     transferMessage.toNativeTokenAmount
                 );
@@ -178,25 +204,30 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         /**
          * Override the relayerFee if the encoded targetRelayerFee is less
          * than the relayer fee set on this chain. This should only happen
-         * if relayer fees are not syncronized across all chains.
+         * if relayer fees are not synchronized across all chains.
          */
         uint256 relayerFee = relayerFee(chainId(), token);
         if (relayerFee > transferMessage.targetRelayerFee) {
             relayerFee = transferMessage.targetRelayerFee;
         }
 
-        // pay the relayer in the minted token denomination
-        SafeERC20.safeTransfer(
-            IERC20(token),
-            msg.sender,
-            relayerFee + transferMessage.toNativeTokenAmount
-        );
+        // add the token swap amount to the relayer fee
+        relayerFee += transferMessage.toNativeTokenAmount;
+
+        // pay the relayer if relayerFee > 0 and the caller is not the recipient
+        if (relayerFee > 0) {
+            SafeERC20.safeTransfer(
+                IERC20(token),
+                msg.sender,
+                relayerFee
+            );
+        }
 
         // pay the target recipient the remaining minted tokens
         SafeERC20.safeTransfer(
             IERC20(token),
             recipient,
-            deposit.amount - relayerFee - transferMessage.toNativeTokenAmount
+            deposit.amount - relayerFee
         );
     }
 
@@ -204,16 +235,19 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
      * @notice Calculates the max amount of tokens the user can convert to
      * native assets on this chain.
      * @dev The max amount of native assets the contract will swap with the user
-     * is governed by the `maxSwapAmount` state variable.
+     * is governed by the `maxNativeSwapAmount` state variable.
      * @param token Address of token being transferred.
      * @return maxAllowed The maximum number of tokens the user is allowed to
      * swap for native assets.
      */
-    function calculateMaxSwapAmount(
+    function calculateMaxSwapAmountIn(
         address token
     ) public view returns (uint256 maxAllowed) {
+        // cache swap rate
+        uint256 swapRate = nativeSwapRate(token);
+        require(swapRate > 0, "swap rate not set");
         maxAllowed =
-            (maxSwapAmount(token) * nativeSwapRate(token)) /
+            (maxNativeSwapAmount(token) * swapRate) /
             (10 ** (18 - tokenDecimals(token)) * nativeSwapRatePrecision());
     }
 
@@ -226,13 +260,16 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
      * @return nativeAmount The exchange rate between native assets and the `toNativeAmount`
      * of transferred tokens.
      */
-    function calculateNativeSwapAmount(
+    function calculateNativeSwapAmountOut(
         address token,
         uint256 toNativeAmount
     ) public view returns (uint256 nativeAmount) {
+        // cache swap rate
+        uint256 swapRate = nativeSwapRate(token);
+        require(swapRate > 0, "swap rate not set");
         nativeAmount =
             nativeSwapRatePrecision() * toNativeAmount /
-            nativeSwapRate(token) * 10 ** (18 - tokenDecimals(token));
+            swapRate * 10 ** (18 - tokenDecimals(token));
     }
 
     function tokenDecimals(address token) internal view returns (uint8) {

@@ -1,4 +1,4 @@
-include testing.env
+include env/testing.env
 
 .PHONY: dependencies unit-test forge-test integration-test clean all
 
@@ -19,6 +19,7 @@ lib/forge-std:
 
 build: dependencies
 	forge build
+	yarn build-types
 
 .PHONY: unit-test
 unit-test: forge-test
