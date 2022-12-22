@@ -249,7 +249,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         uint256 toNativeTokenAmount,
         bytes32 targetRecipientWallet
     ) public {
-        vm.assume(amount > 0 && amount < usdc.totalSupply());
+        vm.assume(amount > 0 && amount < 1e12);
         vm.assume(targetRecipientWallet != bytes32(0));
         vm.assume(amount > toNativeTokenAmount);
 
@@ -602,6 +602,9 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         circleMessage.token = addressToBytes32(foreignUsdcAddress);
         circleMessage.mintRecipient = deposit.mintRecipient;
         circleMessage.amount = deposit.amount;
+        circleMessage.transferInitiator = addressToBytes32(
+            foreignCircleIntegrationAddress
+        );
 
         return circleSimulator.encodeBurnMessageLog(circleMessage);
     }

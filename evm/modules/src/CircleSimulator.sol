@@ -111,6 +111,7 @@ contract CircleSimulator {
         bytes32 token;
         bytes32 mintRecipient;
         uint256 amount;
+        bytes32 transferInitiator;
     }
 
     function decodeBurnMessageLog(
@@ -161,6 +162,10 @@ contract CircleSimulator {
         parsed.amount = encoded.toUint256(index);
         index += 32;
 
+        // caller of burn tx
+        parsed.transferInitiator = encoded.toBytes32(index);
+        index += 32;
+
         // skip random bytes
         index += 8;
 
@@ -181,7 +186,8 @@ contract CircleSimulator {
             bytes4(0),
             parsed.token,
             parsed.mintRecipient,
-            parsed.amount
+            parsed.amount,
+            parsed.transferInitiator
         );
     }
 
