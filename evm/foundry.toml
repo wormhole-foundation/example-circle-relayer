@@ -4,6 +4,7 @@ optimizer = true
 optimizer_runs = 200
 
 test = "forge-test"
+broadcast = "broadcast-test"
 
 libs = [
     "lib",
@@ -14,6 +15,7 @@ remappings = [
     "@solidity-parser/=node_modules/@solidity-parser/",
     "ds-test/=lib/forge-std/lib/ds-test/src/",
     "forge-std/=lib/forge-std/src/",
+    "wormhole/=lib/wormhole/ethereum/contracts",
     "wormhole-solidity/=modules/src",
 ]
 
