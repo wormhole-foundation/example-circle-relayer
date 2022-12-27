@@ -8,8 +8,10 @@ contract CircleRelayerStorage {
         // Wormhole chain ID of this contract
         uint16 chainId;
 
-        // The number of block confirmations needed before the wormhole network
-        // will attest a message.
+        /**
+         * The number of block confirmations needed before the wormhole network
+         * will attest a message.
+         */
         uint8 wormholeFinality;
 
         // owner of this contract
