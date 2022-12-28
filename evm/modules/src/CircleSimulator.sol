@@ -21,7 +21,8 @@ contract CircleSimulator {
     IUSDC usdc;
 
     // Taken from forge-std/Script.sol
-    address private constant VM_ADDRESS = address(bytes20(uint160(uint256(keccak256("hevm cheat code")))));
+    address private constant VM_ADDRESS =
+        address(bytes20(uint160(uint256(keccak256("hevm cheat code")))));
     Vm public constant vm = Vm(VM_ADDRESS);
 
     constructor(
@@ -46,7 +47,11 @@ contract CircleSimulator {
         vm.stopPrank();
     }
 
-     function setupCircleAttester() public {
+    /**
+     * @notice Disables the Circle Bridge attester key, and replaces it with a key
+     * of the user's choice.
+     */
+    function setupCircleAttester() public {
         // instantiate circle attester
         IMessageTransmitter transmitter = IMessageTransmitter(circleTransmitter);
 
@@ -77,7 +82,8 @@ contract CircleSimulator {
 
     /**
      * @notice Finds published Circle burn events in forge logs
-     * @param logs The forge Vm.log captured when recording events during test execution
+     * @param logs The forge Vm.log captured when recording events during test
+     * execution.
      * @param numMessages The expected number of burn events in the forge logs
      */
     function fetchBurnMessageFromLog(
@@ -114,6 +120,7 @@ contract CircleSimulator {
         bytes32 transferInitiator;
     }
 
+    /// @notice Decodes recorded Circle Bridge messages in forge tests
     function decodeBurnMessageLog(
         bytes memory encoded
     ) public pure returns (CircleMessage memory parsed) {
@@ -172,6 +179,7 @@ contract CircleSimulator {
         require(index == encoded.length, "invalid circle message");
     }
 
+    /// @notice Encodes Circle Bridge messages
     function encodeBurnMessageLog(
         CircleMessage memory parsed
     ) public pure returns (bytes memory) {
@@ -191,6 +199,7 @@ contract CircleSimulator {
         );
     }
 
+    /// @notice Queries the Circle Bridge for the next available nonce
     function nextNonce(uint32 domain) public view returns (uint64) {
         return IMessageTransmitter(circleTransmitter).availableNonces(domain);
     }

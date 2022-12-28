@@ -20,7 +20,7 @@ import {CircleRelayerImplementation} from "../src/circle-relayer/CircleRelayerIm
 import {CircleRelayerProxy} from "../src/circle-relayer/CircleRelayerProxy.sol";
 
 /**
- * @title A Test Suite for the Circle-Relayer Smart Contracts
+ * @title A Test Suite for the Circle-Relayer Messages module
  */
 contract CircleRelayerMessagesTest is Test, ForgeHelpers {
     using BytesLib for bytes;
@@ -34,7 +34,7 @@ contract CircleRelayerMessagesTest is Test, ForgeHelpers {
 
     /// @notice Sets up the wormholeSimulator contracts
     function setupWormhole() public {
-        // Set up this chain's Wormhole
+        // set up this chain's Wormhole
         wormholeSimulator = new WormholeSimulator(
             vm.envAddress("TESTING_WORMHOLE_ADDRESS"),
             uint256(vm.envBytes32("TESTING_DEVNET_GUARDIAN")));
@@ -80,10 +80,7 @@ contract CircleRelayerMessagesTest is Test, ForgeHelpers {
     }
 
     function setUp() public {
-        // set up wormhole simulator
         setupWormhole();
-
-        // now our contract
         setupCircleRelayer();
     }
 
@@ -129,7 +126,7 @@ contract CircleRelayerMessagesTest is Test, ForgeHelpers {
         vm.assume(targetRecipientWallet != bytes32(0));
         vm.assume(toNativeAmount < targetRelayerFee);
 
-        // encode the messag by calling encodeTransferTokensWithRelay
+        // encode the message by calling encodeTransferTokensWithRelay
         bytes memory encodedMessage = relayer.encodeTransferTokensWithRelay(
             ICircleRelayer.TransferTokensWithRelay({
                 payloadId: 1,
@@ -163,7 +160,7 @@ contract CircleRelayerMessagesTest is Test, ForgeHelpers {
         vm.assume(targetRecipientWallet != bytes32(0));
         vm.assume(toNativeAmount < targetRelayerFee);
 
-        // encode the messag by calling encodeTransferTokensWithRelay
+        // encode the message by calling encodeTransferTokensWithRelay
         bytes memory encodedMessage = relayer.encodeTransferTokensWithRelay(
             ICircleRelayer.TransferTokensWithRelay({
                 payloadId: 1,
@@ -173,7 +170,7 @@ contract CircleRelayerMessagesTest is Test, ForgeHelpers {
             })
         );
 
-        // Convert the first byte (payloadId) from 1 to 2
+        // convert the first byte (payloadId) from 1 to 2
         bytes memory alteredEncodedMessage = abi.encodePacked(
             uint8(2),
             encodedMessage.slice(1, encodedMessage.length - 1)
@@ -196,7 +193,7 @@ contract CircleRelayerMessagesTest is Test, ForgeHelpers {
         vm.assume(targetRecipientWallet != bytes32(0));
         vm.assume(toNativeAmount < targetRelayerFee);
 
-        // encode the messag by calling encodeTransferTokensWithRelay
+        // encode the message by calling encodeTransferTokensWithRelay
         bytes memory encodedMessage = relayer.encodeTransferTokensWithRelay(
             ICircleRelayer.TransferTokensWithRelay({
                 payloadId: 1,
