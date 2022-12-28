@@ -32,7 +32,9 @@ contract CircleRelayerSetup is CircleRelayerSetters, ERC1967Upgrade, Context {
         _upgradeTo(implementation);
 
         // call initialize function of the new implementation
-        (bool success, bytes memory reason) = implementation.delegatecall(abi.encodeWithSignature("initialize()"));
+        (bool success, bytes memory reason) = implementation.delegatecall(
+            abi.encodeWithSignature("initialize()")
+        );
         require(success, string(reason));
     }
 }

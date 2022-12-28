@@ -62,8 +62,7 @@ contract ForgeHelpers {
         balance = abi.decode(queriedBalance, (uint256));
     }
 
-    /// @notice Converts 20-byte addresses to bytes32 (zero-left-padded)
-    function addressToBytes32(address address_) public pure returns (bytes32) {
+    function addressToBytes32(address address_) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(address_)));
     }
 }

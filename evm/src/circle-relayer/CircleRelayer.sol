@@ -12,8 +12,8 @@ import "./CircleRelayerGovernance.sol";
 import "./CircleRelayerMessages.sol";
 
 /**
- * @title Circle Bridge Asset Relayer Example
- * @notice This example contract composes on Wormhole's Circle Integration contracts to faciliate
+ * @title Circle Bridge Asset Relayer
+ * @notice This contract composes on Wormhole's Circle Integration contracts to faciliate
  * one-click transfers of Circle Bridge supported assets cross chain.
  */
 contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, ReentrancyGuard {
@@ -51,7 +51,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
             "CIRCLE-RELAYER: target not registered"
         );
 
-        // transfer the token to this contract
+        // transfer the tokens to this contract
         uint256 amountReceived = custodyTokens(token, amount);
         uint256 targetRelayerFee = relayerFee(targetChain, token);
         require(
@@ -106,8 +106,8 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         ICircleIntegration integration = circleIntegration();
 
         /**
-         * Mint USDC to this contract. Serves as a reentrancy protection,
-         * since the CircleIntegration contract will not allow the wormhole
+         * Mint tokens to this contract. Serves as a reentrancy protection,
+         * since the circle integration contract will not allow the wormhole
          * message in the redeemParams to be replayed.
          */
         ICircleIntegration.DepositWithPayload memory deposit =
@@ -212,7 +212,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         }
 
         // add the token swap amount to the relayer fee
-        relayerFee += transferMessage.toNativeTokenAmount;
+        relayerFee = relayerFee + transferMessage.toNativeTokenAmount;
 
         // pay the relayer if relayerFee > 0 and the caller is not the recipient
         if (relayerFee > 0) {

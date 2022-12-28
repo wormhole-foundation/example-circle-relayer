@@ -51,6 +51,9 @@ contract CircleRelayerTest is Test, ForgeHelpers {
     // Circle relayer contract
     ICircleRelayer relayer;
 
+    // max burn amount for USDC Circle bridge
+    uint256 constant MAX_BURN_AMOUNT = 1e12;
+
     // relayer and recipient wallets (random wallet addresses)
     address relayerWallet = vm.envAddress(
         "TESTING_RELAYER_WALLET"
@@ -81,9 +84,8 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         uint256 relayerAfter;
     }
 
-    /// @notice Sets up the wormholeSimulator contracts
     function setupWormhole() public {
-        // Set up this chain's Wormhole
+        // set up this chain's Wormhole
         wormholeSimulator = new WormholeSimulator(
             vm.envAddress("TESTING_WORMHOLE_ADDRESS"),
             uint256(vm.envBytes32("TESTING_DEVNET_GUARDIAN")));
@@ -95,7 +97,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         usdc = IUSDC(vm.envAddress("TESTING_USDC_TOKEN_ADDRESS"));
         foreignUsdcAddress = vm.envAddress("TESTING_FOREIGN_USDC_TOKEN_ADDRESS");
 
-        // Set up this chain's Circle Bridge
+        // set up this chain's Circle Bridge
         circleSimulator = new CircleSimulator(
             uint256(vm.envBytes32("TESTING_DEVNET_GUARDIAN")),
             vm.envAddress("TESTING_CIRCLE_TRANSMITTER_ADDRESS"),
@@ -103,7 +105,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
         circleSimulator.setupCircleAttester();
 
-        // confirm that the circle simulator will mint USDc
+        // confirm that the circle simulator will mint USDC
         uint256 amount = 42069;
         circleSimulator.mintUSDC(amount);
         require(usdc.balanceOf(address(this)) == amount);
@@ -151,7 +153,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
             100 * relayer.nativeSwapRatePrecision()
         );
 
-        // set the max swap amount to 10 USDC
+        // set the max swap amount
         relayer.updateMaxNativeSwapAmount(relayer.chainId(), address(usdc), 1e17);
 
         // verify initial state
@@ -171,16 +173,9 @@ contract CircleRelayerTest is Test, ForgeHelpers {
     }
 
     function setUp() public {
-        // set up circle simulator
         setupCircleSimulator();
-
-        // set up wormhole simulator
         setupWormhole();
-
-        // set up circle integration
         setupCircleIntegration();
-
-        // now our contract
         setupCircleRelayer();
     }
 
@@ -249,7 +244,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         uint256 toNativeTokenAmount,
         bytes32 targetRecipientWallet
     ) public {
-        vm.assume(amount > 0 && amount < 1e12);
+        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
         vm.assume(targetRecipientWallet != bytes32(0));
         vm.assume(amount > toNativeTokenAmount);
 
@@ -617,7 +612,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         uint8 counter,
         uint256 amount
     ) public {
-        vm.assume(amount > 0 && amount < 986628630370785);
+        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
 
         // Fetch relayer fee from target contract, which is the relayer contract
         // in this case.
@@ -722,7 +717,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         uint8 counter,
         uint256 amount
     ) public {
-        vm.assume(amount > 0 && amount < 986628630370785);
+        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
 
         // Fetch relayer fee from target contract, which is the relayer contract
         // in this case.
@@ -822,7 +817,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
 
      /**
      * @notice This test confirms that redeemTokens correctly mints tokens to
-     * the user, airdrops native gas, and pays the relayer the encoded relayer
+     * the user, swaps native gas, and pays the relayer the encoded relayer
      * fee. When the toNativeTokenAmount is greater than the max swap amount,
      * the contract will refund the relayer excess native gas.
      */
@@ -831,7 +826,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         uint256 amount,
         uint256 toNativeTokenAmount
     ) public {
-        vm.assume(amount > 0 && amount < 986628630370785);
+        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
         vm.assume(
             toNativeTokenAmount > 0 &&
             toNativeTokenAmount < amount &&
@@ -979,7 +974,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
 
      /**
      * @notice This test confirms that redeemTokens correctly mints tokens to
-     * the user, airdrops native gas, and pays the relayer the encoded relayer
+     * the user, swaps native gas, and pays the relayer the encoded relayer
      * fee. When the toNativeTokenAmount is greater than the max swap amount,
      * the contract will refund the relayer excess native gas.
      */
@@ -988,7 +983,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         uint256 amount,
         uint256 toNativeTokenAmount
     ) public {
-        vm.assume(amount > 0 && amount < 986628630370785);
+        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
         vm.assume(
             toNativeTokenAmount < amount &&
             toNativeTokenAmount < type(uint96).max
@@ -1102,7 +1097,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
             address(usdc)
         );
         vm.assume(encodedRelayerFee != stateRelayerFee);
-        vm.assume(amount > 0 && amount < 986628630370785);
+        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
         vm.assume(encodedRelayerFee < amount);
 
         /**
@@ -1217,7 +1212,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
             relayer.chainId(),
             address(usdc)
         );
-        vm.assume(amount > 0 && amount < 986628630370785);
+        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
 
         /**
          * Create TransferTokensWithRelay payload and then create the
@@ -1286,7 +1281,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         uint256 amount,
         uint256 toNativeTokenAmount
     ) public {
-        vm.assume(amount > 0 && amount < 986628630370785);
+        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
         vm.assume(
             toNativeTokenAmount < amount &&
             toNativeTokenAmount < type(uint96).max
@@ -1356,7 +1351,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
         vm.assume(nativeGasQuote > 0);
 
-        // hoax relayer and balance check
+        // hoax recipient and balance check
         hoax(recipientWallet, nativeGasQuote);
 
         // expect call to revert
@@ -1381,7 +1376,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         uint256 amount,
         uint256 toNativeTokenAmount
     ) public {
-        vm.assume(amount > 0 && amount < 986628630370785);
+        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
         vm.assume(
             toNativeTokenAmount < amount &&
             toNativeTokenAmount < type(uint96).max

@@ -21,7 +21,7 @@ import {CircleRelayerImplementation} from "../src/circle-relayer/CircleRelayerIm
 import {CircleRelayerProxy} from "../src/circle-relayer/CircleRelayerProxy.sol";
 
 /**
- * @title A Test Suite for the Circle-Relayer Smart Contracts
+ * @title A Test Suite for the Circle-Relayer Governance Module
  */
 contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     using BytesLib for bytes;
@@ -47,7 +47,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
 
     /// @notice Sets up the wormholeSimulator contracts
     function setupWormhole() public {
-        // Set up this chain's Wormhole
+        // set up this chain's Wormhole
         wormholeSimulator = new WormholeSimulator(
             vm.envAddress("TESTING_WORMHOLE_ADDRESS"),
             uint256(vm.envBytes32("TESTING_DEVNET_GUARDIAN")));
@@ -118,19 +118,14 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     }
 
     function setUp() public {
-        // set up circle contracts (transferring ownership to address(this), etc)
         setupUSDC();
-
-        // set up wormhole simulator
         setupWormhole();
-
-        // now our contract
         setupCircleRelayer();
     }
 
     /**
      * @notice This test confirms that the owner can correctly upgrade the
-     * contract impementation.
+     * contract implementation.
      */
     function testUpgrade() public {
         // hashed slot of implementation
@@ -167,7 +162,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
 
     /**
      * @notice This test confirms that the owner cannot upgrade the
-     * contract impementation to the wrong chain.
+     * contract implementation to the wrong chain.
      */
     function testUpgradeWrongChain() public {
         uint16 wrongChainId_ = 69;
@@ -208,7 +203,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     }
 
     /**
-     * @notice This test confirms that the only cannot update the
+     * @notice This test confirms that the owner cannot update the
      * implementation to the zero address.
      */
     function testUpgradeOnlyInvalidImplementation() public {
@@ -251,7 +246,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         assertEq(registeredContract, circleRelayerContract);
     }
 
-    /// @notice This test confirms that the owner can not register address(0)
+    /// @notice This test confirms that the owner cannot register address(0)
     function testRegisterContractZeroAddress() public {
         uint16 chainId_ = 42;
         bytes32 zeroAddress = addressToBytes32(address(0));
@@ -262,7 +257,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     }
 
     /**
-     * @notice This test confirms that the owner can not register a foreign
+     * @notice This test confirms that the owner cannot register a foreign
      * CircleRelayer contract with the same chainId.
      */
     function testRegisterContractThisChainId() public {
@@ -282,7 +277,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     }
 
     /**
-     * @notice This test confirms that the owner can not register a foreign
+     * @notice This test confirms that the owner cannot register a foreign
      * CircleRelayer contract with a chainId of zero.
      */
     function testRegisterContractChainIdZero() public {
@@ -353,7 +348,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     }
 
     /**
-     * @notice This test confirms that the owner can not update the relayer
+     * @notice This test confirms that the owner cannot update the relayer
      * fee for a token that is not accepted by the Circle Integration contract.
      */
     function testUpdateRelayerFeeInvalidToken() public {
@@ -421,7 +416,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     }
 
     /**
-     * @notice This test confirms that the owner can not update the native
+     * @notice This test confirms that the owner cannot update the native
      * swap rate to zero.
      */
     function testUpdateNativeSwapRateZeroRate() public {
@@ -444,7 +439,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     }
 
     /**
-     * @notice This test confirms that the owner can not update the native
+     * @notice This test confirms that the owner cannot update the native
      * swap rate for a token not accepted by the Circle Integration contract.
      */
     function testUpdateNativeSwapRateInvalidToken() public {
@@ -771,7 +766,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         assertEq(relayer.pendingOwner(), newOwner);
 
         // Invoke the confirmOwnershipTransferRequest method from the
-        // new owners wallet.
+        // new owner's wallet.
         vm.prank(newOwner);
         relayer.confirmOwnershipTransferRequest();
 

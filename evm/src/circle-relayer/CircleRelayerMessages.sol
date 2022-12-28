@@ -8,11 +8,16 @@ import "./CircleRelayerStructs.sol";
 contract CircleRelayerMessages is CircleRelayerStructs {
     using BytesLib for bytes;
 
+    /**
+     * @notice Serializes the `TransferTokensWithRelay` struct
+     * @param transfer `TransferTokensWithRelay` struct
+     * @return encoded Serialized `TransferTokensWithRelay` struct
+     */
     function encodeTransferTokensWithRelay(
         TransferTokensWithRelay memory transfer
-    ) public pure returns (bytes memory) {
+    ) public pure returns (bytes memory encoded) {
         require(transfer.payloadId == 1, "invalid payloadId");
-        return abi.encodePacked(
+        encoded = abi.encodePacked(
             transfer.payloadId,
             transfer.targetRelayerFee,
             transfer.toNativeTokenAmount,
@@ -20,6 +25,14 @@ contract CircleRelayerMessages is CircleRelayerStructs {
         );
     }
 
+    /**
+     * @notice Decodes an encoded `TransferTokensWithRelay` struct
+     * @dev reverts if:
+     * - the first byte (payloadId) does not equal 1
+     * - the length of the payload has an unexpected length
+     * @param encoded Encoded `TransferTokensWithRelay` struct
+     * @return transfer `TransferTokensWithRelay` struct
+     */
     function decodeTransferTokensWithRelay(
         bytes memory encoded
     ) public pure returns (TransferTokensWithRelay memory transfer) {
@@ -35,7 +48,7 @@ contract CircleRelayerMessages is CircleRelayerStructs {
         transfer.targetRelayerFee = encoded.toUint256(index);
         index += 32;
 
-        // amount of tokens to convert to native currency
+        // amount of tokens to convert to native assets
         transfer.toNativeTokenAmount = encoded.toUint256(index);
         index += 32;
 
