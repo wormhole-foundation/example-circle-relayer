@@ -14,7 +14,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     event SwapRateUpdated(address indexed token, uint256 indexed swapRate);
 
     /**
-     * @notice Upgrades contract implementations (logic contract)
+     * @notice Upgrades contract the implementation (logic contract)
      * @param chainId_ Wormhole chain ID
      * @param newImplementation Address of the new implementation (logic) contract
      */
@@ -58,7 +58,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
 
     /**
      * @notice Starts the ownership transfer process of the contracts. It saves
-     * an address for the new owner in the pending state.
+     * an address in the pending owner state variable.
      * @param chainId_ Wormhole chain ID
      * @param newOwner Address of the pending owner
      */
@@ -75,7 +75,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
      * @notice Finalizes the ownership transfer to the pending owner
      * @dev It checks that the caller is the pendingOwner to validate the wallet
      * address. It updates the owner state variable with the pendingOwner state
-     * variable
+     * variable.
      */
     function confirmOwnershipTransferRequest() public {
         // cache the new owner address
@@ -118,12 +118,11 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     }
 
     /**
-     * @notice Update the fee for relaying transfers to foreign contracts.
+     * @notice Update the fee for relaying transfers to foreign contracts
      * @dev This function can update the source contract's record of the relayer
      * fee.
      * @param chainId_ Wormhole chain ID
-     * @param token Address of the token to update the relayer fee for. The fee
-     * is denominated in this token.
+     * @param token Address of the token to update the relayer fee for
      * @param amount Quantity of tokens to pay the relayer upon redemption
      */
     function updateRelayerFee(
@@ -148,8 +147,8 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
      * and the specified token.
      * @param chainId_ Wormhole chain ID
      * @param token Address of the token to update the conversion rate for
-     * @param swapRate The native to token conversion rate.
-     * @dev The swapRate is conversion rate using asset prices denominated in
+     * @param swapRate The native -> token conversion rate.
+     * @dev The swapRate is the conversion rate using asset prices denominated in
      * USD multiplied by the nativeSwapRatePrecision. For example, if the conversion
      * rate is $15 and the nativeSwapRatePrecision is 1000000, the swapRate should be set
      * to 15000000.
