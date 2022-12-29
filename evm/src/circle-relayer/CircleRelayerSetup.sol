@@ -11,7 +11,6 @@ contract CircleRelayerSetup is CircleRelayerSetters, ERC1967Upgrade, Context {
         address implementation,
         uint16 chainId,
         address wormhole,
-        uint8 finality,
         address circleIntegration,
         uint256 swapRatePrecision
     ) public {
@@ -24,7 +23,6 @@ contract CircleRelayerSetup is CircleRelayerSetters, ERC1967Upgrade, Context {
         setOwner(_msgSender());
         setChainId(chainId);
         setWormhole(wormhole);
-        setWormholeFinality(finality);
         setCircleIntegration(circleIntegration);
         setNativeSwapRatePrecision(swapRatePrecision);
 

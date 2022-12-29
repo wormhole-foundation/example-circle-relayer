@@ -131,12 +131,11 @@ contract CircleRelayerTest is Test, ForgeHelpers {
             address(setup),
             abi.encodeWithSelector(
                 bytes4(
-                    keccak256("setup(address,uint16,address,uint8,address,uint256)")
+                    keccak256("setup(address,uint16,address,address,uint256)")
                 ),
                 address(implementation),
                 uint16(wormhole.chainId()),
                 address(wormhole),
-                uint8(1), // finality
                 vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
                 1e8 // initial swap rate precision
             )
@@ -160,7 +159,6 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         assertEq(relayer.isInitialized(address(implementation)), true);
         assertEq(relayer.chainId(), wormhole.chainId());
         assertEq(address(relayer.wormhole()), address(wormhole));
-        assertEq(relayer.wormholeFinality(), uint8(1));
         assertEq(
             address(relayer.circleIntegration()),
             vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS")
@@ -572,7 +570,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         vm.sequence = wormhole.nextSequence(
             address(uint160(uint256(emitterAddress)))
         );
-        vm.consistencyLevel = relayer.wormholeFinality();
+        vm.consistencyLevel = 69;
         vm.payload = integration.encodeDepositWithPayload(deposit);
 
         // encode the bservation

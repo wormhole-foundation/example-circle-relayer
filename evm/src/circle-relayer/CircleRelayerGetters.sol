@@ -27,10 +27,6 @@ contract CircleRelayerGetters is CircleRelayerSetters {
         return _state.chainId;
     }
 
-    function wormholeFinality() public view returns (uint8) {
-        return _state.wormholeFinality;
-    }
-
     function circleIntegration() public view returns (ICircleIntegration) {
         return ICircleIntegration(_state.circleIntegration);
     }
