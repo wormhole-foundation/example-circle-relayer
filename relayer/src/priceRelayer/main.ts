@@ -142,20 +142,26 @@ async function main() {
             `Price update, chainId: ${chainId}, token: ${token}, currentPrice: ${currentPrice}, newPrice: ${newPrice}`
           );
 
-          // update prices if they have changed by the minPriceChangePercentage
-          if (Math.abs(percentageChange) > minPriceChangePercentage) {
-            const receipt = await CONTRACTS[chainId]
-              .updateNativeSwapRate(token, newPrice)
-              .then((tx: ethers.ContractTransaction) => tx.wait())
-              .catch((msg: any) => {
-                // should not happen
-                console.log(msg);
-                return null;
-              });
+          try {
+            // update prices if they have changed by the minPriceChangePercentage
+            if (Math.abs(percentageChange) > minPriceChangePercentage) {
+              const gasParams = await PROVIDERS[chainId].getFeeData();
 
-            console.log(
-              `Updated native price on chainId: ${chainId}, token: ${token}, txhash: ${receipt.transactionHash}`
-            );
+              const receipt = await CONTRACTS[chainId]
+                .updateNativeSwapRate(token, newPrice)
+                .then((tx: ethers.ContractTransaction) => tx.wait())
+                .catch((msg: any) => {
+                  // should not happen
+                  console.log(msg);
+                  return null;
+                });
+
+              console.log(
+                `Updated native price on chainId: ${chainId}, token: ${token}, txhash: ${receipt.transactionHash}`
+              );
+            }
+          } catch (e) {
+            console.error(e);
           }
         }
       } catch (e) {
