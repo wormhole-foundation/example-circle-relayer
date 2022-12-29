@@ -24,10 +24,6 @@ contract CircleRelayerSetters is CircleRelayerState {
         _state.chainId = chainId_;
     }
 
-    function setWormholeFinality(uint8 finality) internal {
-        _state.wormholeFinality = finality;
-    }
-
     function setCircleIntegration(address circleIntegration_) internal {
         _state.circleIntegration = circleIntegration_;
     }

@@ -9,7 +9,6 @@ import "./CircleRelayerState.sol";
 
 contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     event ContractUpgraded(address indexed oldContract, address indexed newContract);
-    event WormholeFinalityUpdated(uint8 indexed oldLevel, uint8 indexed newFinality);
     event OwnershipTransfered(address indexed oldOwner, address indexed newOwner);
     event SwapRateUpdated(address indexed token, uint256 indexed swapRate);
 
@@ -36,24 +35,6 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
         require(success, string(reason));
 
         emit ContractUpgraded(currentImplementation, newImplementation);
-    }
-
-    /**
-     * @notice Updates the wormhole messaging consistencyLevel (finality)
-     * @param chainId_ Wormhole chain ID
-     * @param newWormholeFinality New Wormhole consistencyLevel
-     */
-    function updateWormholeFinality(
-        uint16 chainId_,
-        uint8 newWormholeFinality
-    ) public onlyOwner checkChain(chainId_) {
-        require(newWormholeFinality > 0, "invalid wormhole finality");
-
-        uint8 currentWormholeFinality = wormholeFinality();
-
-        setWormholeFinality(newWormholeFinality);
-
-        emit WormholeFinalityUpdated(currentWormholeFinality, newWormholeFinality);
     }
 
     /**

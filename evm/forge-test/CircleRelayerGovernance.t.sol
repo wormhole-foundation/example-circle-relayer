@@ -93,12 +93,11 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
             address(setup),
             abi.encodeWithSelector(
                 bytes4(
-                    keccak256("setup(address,uint16,address,uint8,address,uint256)")
+                    keccak256("setup(address,uint16,address,address,uint256)")
                 ),
                 address(implementation),
                 uint16(wormhole.chainId()),
                 address(wormhole),
-                uint8(1), // finality
                 vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
                 1e8 // initial swap rate precision
             )
@@ -109,7 +108,6 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         assertEq(relayer.isInitialized(address(implementation)), true);
         assertEq(relayer.chainId(), wormhole.chainId());
         assertEq(address(relayer.wormhole()), address(wormhole));
-        assertEq(relayer.wormholeFinality(), uint8(1));
         assertEq(
             address(relayer.circleIntegration()),
             vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS")
@@ -798,79 +796,6 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         vm.startPrank(address(this));
         vm.expectRevert("caller must be pendingOwner");
         relayer.confirmOwnershipTransferRequest();
-
-        vm.stopPrank();
-    }
-
-    /**
-     * @notice This test confirms that the owner can update the wormhole message
-     * finality.
-     */
-    function testUpdateWormholeFinality(uint8 wormholeFinality_) public {
-        vm.assume(wormholeFinality_ > 0);
-
-        // update the wormhole finality
-        relayer.updateWormholeFinality(relayer.chainId(), wormholeFinality_);
-
-        // confirm state changes
-        assertEq(relayer.wormholeFinality(), wormholeFinality_);
-    }
-
-    /**
-     * @notice This test confirms that the owner can only update the wormhole
-     * message finality with the correct chainId.
-     */
-    function testUpdateWormholeFinalityWrongChain(uint16 chainId_) public {
-        vm.assume(chainId_ > 0 && chainId_ != relayer.chainId());
-
-        uint8 wormholeFinality_ = 69;
-
-        // expect the updateWormholeFinality call to revert
-        vm.expectRevert("wrong chain");
-        relayer.updateWormholeFinality(chainId_, wormholeFinality_);
-    }
-
-    /**
-     * @notice This test confirms that the owner can only update the wormhole
-     * message finality to a value greater than zero.
-     */
-    function testUpdateWormholeFinalityZeroFinality() public {
-        uint8 wormholeFinality_ = 0;
-
-        // expect the updateWormholeFinality call to revert
-        bytes memory encodedSignature = abi.encodeWithSignature(
-            "updateWormholeFinality(uint16,uint8)",
-            relayer.chainId(),
-            wormholeFinality_
-        );
-        expectRevert(
-            address(relayer),
-            encodedSignature,
-            "invalid wormhole finality"
-        );
-    }
-
-    /**
-     * @notice This test confirms that ONLY the owner can update the wormhole
-     * finality.
-     */
-    function testUpdateWormholeFinalityOwnerOnly() public {
-        uint8 wormholeFinality_ = 69;
-
-        // prank the caller address to something different than the owner's
-        vm.startPrank(address(usdc));
-
-        // expect the updateWormholeFinality call to revert
-        bytes memory encodedSignature = abi.encodeWithSignature(
-            "updateWormholeFinality(uint16,uint8)",
-            relayer.chainId(),
-            wormholeFinality_
-        );
-        expectRevert(
-            address(relayer),
-            encodedSignature,
-            "caller not the owner"
-        );
 
         vm.stopPrank();
     }

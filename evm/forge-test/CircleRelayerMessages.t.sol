@@ -55,12 +55,11 @@ contract CircleRelayerMessagesTest is Test, ForgeHelpers {
             address(setup),
             abi.encodeWithSelector(
                 bytes4(
-                    keccak256("setup(address,uint16,address,uint8,address,uint256)")
+                    keccak256("setup(address,uint16,address,address,uint256)")
                 ),
                 address(implementation),
                 uint16(wormhole.chainId()),
                 address(wormhole),
-                uint8(1), // finality
                 vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
                 1e8 // initial swap rate precision
             )
@@ -71,7 +70,6 @@ contract CircleRelayerMessagesTest is Test, ForgeHelpers {
         assertEq(relayer.isInitialized(address(implementation)), true);
         assertEq(relayer.chainId(), wormhole.chainId());
         assertEq(address(relayer.wormhole()), address(wormhole));
-        assertEq(relayer.wormholeFinality(), uint8(1));
         assertEq(
             address(relayer.circleIntegration()),
             vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS")
