@@ -61,8 +61,6 @@ interface ICircleRelayer {
 
     function chainId() external view returns (uint16);
 
-    function wormholeFinality() external view returns (uint8);
-
     function circleIntegration() external view returns (ICircleIntegration);
 
     function relayerFee(uint16 chainId_, address token) external view returns (uint256);
