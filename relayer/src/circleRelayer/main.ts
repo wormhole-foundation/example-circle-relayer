@@ -64,8 +64,8 @@ const CIRCLE_EMITTER_ADDRESSES = {
 };
 
 const USDC_RELAYER = {
-  [CHAIN_ID_ETH]: "0x2dacca34c172687efa15243a179ea9e170864a67",
-  [CHAIN_ID_AVAX]: "0x7b135d7959e59ba45c55ae08c14920b06f2658ec",
+  [CHAIN_ID_ETH]: "0xC0a4e16a5B1e7342EF9c2837F4c94cB66A91601C",
+  [CHAIN_ID_AVAX]: "0xfC6d1D7A5a511F9555Fc013a296Ed47c9C297fB3",
 };
 
 const USDC_WH_SENDER = {
@@ -219,7 +219,7 @@ function handleRelayerEvent(
         payloadArray.subarray(180, 212)
       );
 
-      if (mintRecipient != USDC_RELAYER[fromChain]) {
+      if (ethers.utils.getAddress(mintRecipient) != USDC_RELAYER[fromChain]) {
         console.warn(
           `Unknown mintRecipient: ${mintRecipient} for chainId: ${toChain}, terminating relay`
         );
