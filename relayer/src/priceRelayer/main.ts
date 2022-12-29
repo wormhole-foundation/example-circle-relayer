@@ -36,8 +36,8 @@ type SupportedChainId = typeof SUPPORTED_CHAINS[number];
 
 // circle relayer contract addresses
 const CIRCLE_RELAYER_ADDRESSES = {
-  [CHAIN_ID_ETH]: "0x2dacca34c172687efa15243a179ea9e170864a67",
-  [CHAIN_ID_AVAX]: "0x7b135d7959e59ba45c55ae08c14920b06f2658ec",
+  [CHAIN_ID_ETH]: "0xC0a4e16a5B1e7342EF9c2837F4c94cB66A91601C",
+  [CHAIN_ID_AVAX]: "0xfC6d1D7A5a511F9555Fc013a296Ed47c9C297fB3",
 };
 
 // rpc provider
@@ -55,7 +55,7 @@ const SIGNERS = {
 // circle relayer contract instances
 const ABI = [
   "function nativeSwapRate(address) public view returns (uint256)",
-  "function updateNativeSwapRate(address,uint256) public",
+  "function updateNativeSwapRate(uint16,address,uint256) public",
 ];
 const CONTRACTS = {
   [CHAIN_ID_ETH]: new ethers.Contract(
@@ -148,7 +148,7 @@ async function main() {
               const gasParams = await PROVIDERS[chainId].getFeeData();
 
               const receipt = await CONTRACTS[chainId]
-                .updateNativeSwapRate(token, newPrice)
+                .updateNativeSwapRate(chainId, token, newPrice)
                 .then((tx: ethers.ContractTransaction) => tx.wait())
                 .catch((msg: any) => {
                   // should not happen
