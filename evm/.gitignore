@@ -6,6 +6,5 @@ out
 broadcast
 broadcast-test
 yarn-error.log
-foundry-test.toml
 forge-scripts/deploy.out
 deploy.out
