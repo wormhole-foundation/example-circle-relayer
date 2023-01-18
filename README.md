@@ -1,4 +1,4 @@
-# Example-Circle-Relayer
+# WH x CCTP USDC Bridge Example
 
 Please start by reading the [design document](https://github.com/wormhole-foundation/example-circle-relayer/blob/main/DESIGN.md).
 
