@@ -55,17 +55,17 @@ contract CircleSimulator {
         // instantiate circle attester
         IMessageTransmitter transmitter = IMessageTransmitter(circleTransmitter);
 
-        // save enabled attester address
-        address enabledAttester = transmitter.getEnabledAttester(0);
-
         // enable the guardian key as an attester
         vm.startPrank(transmitter.attesterManager());
+
+        // set the signature threshold to 1
+        transmitter.setSignatureThreshold(1);
+
+        // enable our key as the attester
         transmitter.enableAttester(
             vm.addr(signerPK)
         );
 
-        // disable the original enabled attester
-        transmitter.disableAttester(enabledAttester);
         vm.stopPrank();
     }
 
