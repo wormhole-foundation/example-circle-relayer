@@ -30,7 +30,7 @@ cp -v foundry-test.toml foundry.toml
 echo "deploy contracts"
 RELEASE_WORMHOLE_ADDRESS=$ETH_WORMHOLE_ADDRESS \
 RELEASE_CIRCLE_INTEGRATION_ADDRESS=$ETH_CIRCLE_INTEGRATION_ADDRESS \
-RELEASE_SWAP_RATE_PRECISION=$ETH_SWAP_RATE_PRECISION \
+RELEASE_NATIVE_TOKEN_DECIMALS=$ETH_NATIVE_TOKEN_DECIMALS \
 forge script forge-scripts/deploy_contracts.sol \
     --rpc-url http://localhost:8545 \
     --private-key $PRIVATE_KEY \
@@ -38,7 +38,7 @@ forge script forge-scripts/deploy_contracts.sol \
 
 RELEASE_WORMHOLE_ADDRESS=$AVAX_WORMHOLE_ADDRESS \
 RELEASE_CIRCLE_INTEGRATION_ADDRESS=$AVAX_CIRCLE_INTEGRATION_ADDRESS \
-RELEASE_SWAP_RATE_PRECISION=$AVAX_SWAP_RATE_PRECISION \
+RELEASE_NATIVE_TOKEN_DECIMALS=$AVAX_NATIVE_TOKEN_DECIMALS \
 forge script forge-scripts/deploy_contracts.sol \
     --rpc-url http://localhost:8546 \
     --private-key $PRIVATE_KEY \

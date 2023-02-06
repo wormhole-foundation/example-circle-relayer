@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache 2
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -161,14 +161,12 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
             uint256 maxToNativeAllowed = calculateMaxSwapAmountIn(token);
             if (transferMessage.toNativeTokenAmount > maxToNativeAllowed) {
                 transferMessage.toNativeTokenAmount = maxToNativeAllowed;
-                nativeAmountForRecipient = maxNativeSwapAmount(token);
-            } else {
-                // compute amount of native asset to pay the recipient
-                nativeAmountForRecipient = calculateNativeSwapAmountOut(
-                    token,
-                    transferMessage.toNativeTokenAmount
-                );
             }
+            // compute amount of native asset to pay the recipient
+            nativeAmountForRecipient = calculateNativeSwapAmountOut(
+                token,
+                transferMessage.toNativeTokenAmount
+            );
 
             /**
              * The nativeAmountForRecipient can be zero if the user specifed a toNativeTokenAmount
@@ -246,9 +244,20 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         // cache swap rate
         uint256 swapRate = nativeSwapRate(token);
         require(swapRate > 0, "swap rate not set");
-        maxAllowed =
-            (maxNativeSwapAmount(token) * swapRate) /
-            (10 ** (18 - tokenDecimals(token)) * nativeSwapRatePrecision());
+
+        // cache token decimals
+        uint8 tokenDecimals_ = tokenDecimals(token);
+        uint8 nativeDecimals = nativeTokenDecimals();
+
+        if (tokenDecimals_ > nativeDecimals) {
+            maxAllowed =
+                maxNativeSwapAmount(token) * swapRate *
+                10 ** (tokenDecimals_ - nativeDecimals) / nativeSwapRatePrecision();
+        } else {
+            maxAllowed =
+                (maxNativeSwapAmount(token) * swapRate) /
+                (10 ** (nativeDecimals - tokenDecimals_) * nativeSwapRatePrecision());
+        }
     }
 
     /**
@@ -267,9 +276,20 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         // cache swap rate
         uint256 swapRate = nativeSwapRate(token);
         require(swapRate > 0, "swap rate not set");
-        nativeAmount =
-            nativeSwapRatePrecision() * toNativeAmount /
-            swapRate * 10 ** (18 - tokenDecimals(token));
+
+        // cache token decimals
+        uint8 tokenDecimals_ = tokenDecimals(token);
+        uint8 nativeDecimals = nativeTokenDecimals();
+
+        if (tokenDecimals_ > nativeDecimals) {
+            nativeAmount =
+                nativeSwapRatePrecision() * toNativeAmount /
+                (swapRate * 10 ** (tokenDecimals_ - nativeDecimals));
+        } else {
+            nativeAmount =
+                nativeSwapRatePrecision() * toNativeAmount *
+                10 ** (nativeDecimals - tokenDecimals_) / swapRate;
+        }
     }
 
     function tokenDecimals(address token) internal view returns (uint8) {

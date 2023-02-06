@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache 2
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
-contract CircleRelayerStructs {
+abstract contract CircleRelayerStructs {
     struct TransferTokensWithRelay {
         uint8 payloadId; // == 1
         uint256 targetRelayerFee;

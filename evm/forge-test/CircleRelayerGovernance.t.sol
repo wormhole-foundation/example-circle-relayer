@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache 2
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -93,13 +93,13 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
             address(setup),
             abi.encodeWithSelector(
                 bytes4(
-                    keccak256("setup(address,uint16,address,address,uint256)")
+                    keccak256("setup(address,uint16,address,address,uint8)")
                 ),
                 address(implementation),
                 uint16(wormhole.chainId()),
                 address(wormhole),
                 vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
-                1e8 // initial swap rate precision
+                uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS"))
             )
         );
         relayer = ICircleRelayer(address(proxy));
@@ -744,6 +744,90 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         );
 
         vm.stopPrank();
+    }
+
+    /**
+     * @notice This test confirms that the owner can cancel the ownership-transfer
+     * process.
+     */
+    function testCancelOwnershipTransferRequest(address newOwner) public {
+        vm.assume(newOwner != address(this) && newOwner != address(0));
+
+        // set the pending owner
+        relayer.submitOwnershipTransferRequest(
+            relayer.chainId(),
+            newOwner
+        );
+        assertEq(relayer.pendingOwner(), newOwner);
+
+        // cancel the request to change ownership of the contract
+        relayer.cancelOwnershipTransferRequest(relayer.chainId());
+
+        // confirm that the pending owner was set to the zero address
+        assertEq(relayer.pendingOwner(), address(0));
+
+        vm.startPrank(newOwner);
+
+        // expect the confirmOwnershipTransferRequest call to revert
+        vm.expectRevert("caller must be pendingOwner");
+        relayer.confirmOwnershipTransferRequest();
+
+        vm.stopPrank();
+    }
+
+    /**
+     * @notice This test confirms that the owner cannot submit a request to
+     * cancel the ownership-transfer process on the wrong chain.
+     */
+    function testCancelOwnershipTransferRequestWrongChain(uint16 chainId_) public {
+        vm.assume(chainId_ != relayer.chainId());
+
+        address wallet = makeAddr("wallet");
+
+        // set the pending owner
+        relayer.submitOwnershipTransferRequest(
+            relayer.chainId(),
+            wallet // random input
+        );
+
+        // expect the cancelOwnershipTransferRequest call to revert
+        vm.expectRevert("wrong chain");
+        relayer.cancelOwnershipTransferRequest(chainId_);
+
+        // confirm pending owner is still set to address(this)
+        assertEq(relayer.pendingOwner(), wallet);
+    }
+
+    /**
+     * @notice This test confirms that ONLY the owner can submit a request
+     * to cancel the ownership-transfer process of the contract.
+     */
+    function testCancelOwnershipTransferRequestOwnerOnly() public {
+        address wallet = makeAddr("wallet");
+
+        // set the pending owner
+        relayer.submitOwnershipTransferRequest(
+            relayer.chainId(),
+            wallet // random input
+        );
+
+        vm.startPrank(wallet);
+
+        // expect the cancelOwnershipTransferRequest call to revert
+        bytes memory encodedSignature = abi.encodeWithSignature(
+            "cancelOwnershipTransferRequest(uint16)",
+            relayer.chainId()
+        );
+        expectRevert(
+            address(relayer),
+            encodedSignature,
+            "caller not the owner"
+        );
+
+        vm.stopPrank();
+
+        // confirm pending owner is still set to address(this)
+        assertEq(relayer.pendingOwner(), wallet);
     }
 
     /**

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache 2
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
 import "../libraries/BytesLib.sol";
 
 import "./CircleRelayerStructs.sol";
 
-contract CircleRelayerMessages is CircleRelayerStructs {
+abstract contract CircleRelayerMessages is CircleRelayerStructs {
     using BytesLib for bytes;
 
     /**

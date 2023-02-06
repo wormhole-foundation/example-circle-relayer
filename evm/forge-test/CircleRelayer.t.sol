@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache 2
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -131,13 +131,13 @@ contract CircleRelayerTest is Test, ForgeHelpers {
             address(setup),
             abi.encodeWithSelector(
                 bytes4(
-                    keccak256("setup(address,uint16,address,address,uint256)")
+                    keccak256("setup(address,uint16,address,address,uint8)")
                 ),
                 address(implementation),
                 uint16(wormhole.chainId()),
                 address(wormhole),
                 vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
-                1e8 // initial swap rate precision
+                uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS"))
             )
         );
         relayer = ICircleRelayer(address(proxy));
