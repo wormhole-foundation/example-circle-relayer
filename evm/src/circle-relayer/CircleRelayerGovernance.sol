@@ -121,8 +121,8 @@ abstract contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrad
         address token,
         uint256 amount
     ) public onlyOwner {
+        require(chainId_ != chainId(), "invalid chain");
         require(
-            (chainId_ == chainId()) ||
             getRegisteredContract(chainId_) != bytes32(0),
             "contract doesn't exist"
         );

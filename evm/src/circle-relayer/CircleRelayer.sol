@@ -199,25 +199,16 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
             }
         }
 
-        /**
-         * Override the relayerFee if the encoded targetRelayerFee is less
-         * than the relayer fee set on this chain. This should only happen
-         * if relayer fees are not synchronized across all chains.
-         */
-        uint256 relayerFee = relayerFee(chainId(), token);
-        if (relayerFee > transferMessage.targetRelayerFee) {
-            relayerFee = transferMessage.targetRelayerFee;
-        }
-
         // add the token swap amount to the relayer fee
-        relayerFee = relayerFee + transferMessage.toNativeTokenAmount;
+        uint256 amountForRelayer =
+            transferMessage.targetRelayerFee + transferMessage.toNativeTokenAmount;
 
         // pay the relayer if relayerFee > 0 and the caller is not the recipient
-        if (relayerFee > 0) {
+        if (amountForRelayer > 0) {
             SafeERC20.safeTransfer(
                 IERC20(token),
                 msg.sender,
-                relayerFee
+                amountForRelayer
             );
         }
 
@@ -225,7 +216,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         SafeERC20.safeTransfer(
             IERC20(token),
             recipient,
-            deposit.amount - relayerFee
+            deposit.amount - amountForRelayer
         );
     }
 

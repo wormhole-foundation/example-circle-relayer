@@ -310,7 +310,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
      * for any registered relayer contract.
      */
     function testUpdateRelayerFee(uint16 chainId_, uint256 relayerFee) public {
-        vm.assume(chainId_ != 0 && chainId_ != relayer.chainId());
+        vm.assume(chainId_ != relayer.chainId() && chainId_ != 0);
 
         // register random target contract
         relayer.registerContract(chainId_, addressToBytes32(address(this)));
@@ -331,13 +331,10 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
      * for a registered relayer contract or for its own chainId.
      */
     function testUpdateRelayerFeeContractNotRegistered(uint16 chainId_) public {
-        if (chainId_ != relayer.chainId()) {
-            // expect revert
-            vm.expectRevert("contract doesn't exist");
-        }
+        vm.assume(chainId_ != relayer.chainId() && chainId_ != 0);
 
-        // Attempt to update relayer fee with out registering a contract for
-        // the chainId.
+        // expect the call to revert
+        vm.expectRevert("contract doesn't exist");
         relayer.updateRelayerFee(
             chainId_,
             address(usdc),
@@ -346,19 +343,42 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     }
 
     /**
-     * @notice This test confirms that the owner cannot update the relayer
-     * fee for a token that is not accepted by the Circle Integration contract.
+     * @notice This test confirms that the owner cannot update the relayerFee
+     * for the deployed chainId.
      */
-    function testUpdateRelayerFeeInvalidToken() public {
-        address invalidTokenAddress = address(this);
-        uint256 relayerFee = 1e8;
-
+    function testUpdateRelayerFeeNotThisChain() public {
         // expect the updateRelayerFee method call to fail
         bytes memory encodedSignature = abi.encodeWithSignature(
             "updateRelayerFee(uint16,address,uint256)",
             relayer.chainId(),
+            address(usdc),
+            1e4
+        );
+        expectRevert(
+            address(relayer),
+            encodedSignature,
+            "invalid chain"
+        );
+    }
+
+    /**
+     * @notice This test confirms that the owner cannot update the relayer
+     * fee for a token that is not accepted by the Circle Integration contract.
+     */
+    function testUpdateRelayerFeeInvalidToken(uint16 chainId_) public {
+        vm.assume(chainId_ != relayer.chainId() && chainId_ != 0);
+
+        address invalidTokenAddress = address(this);
+
+        // register random target contract
+        relayer.registerContract(chainId_, addressToBytes32(address(this)));
+
+        // expect the updateRelayerFee method call to fail
+        bytes memory encodedSignature = abi.encodeWithSignature(
+            "updateRelayerFee(uint16,address,uint256)",
+            chainId_,
             invalidTokenAddress,
-            relayerFee
+            1e8
         );
         expectRevert(
             address(relayer),
