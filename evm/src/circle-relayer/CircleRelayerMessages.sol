@@ -5,7 +5,7 @@ import "../libraries/BytesLib.sol";
 
 import "./CircleRelayerStructs.sol";
 
-abstract contract CircleRelayerMessages is CircleRelayerStructs {
+contract CircleRelayerMessages is CircleRelayerStructs {
     using BytesLib for bytes;
 
     /**

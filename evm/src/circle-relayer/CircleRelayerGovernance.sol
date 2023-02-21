@@ -7,7 +7,7 @@ import "./CircleRelayerSetters.sol";
 import "./CircleRelayerGetters.sol";
 import "./CircleRelayerState.sol";
 
-abstract contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
+contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     event ContractUpgraded(address indexed oldContract, address indexed newContract);
     event OwnershipTransfered(address indexed oldOwner, address indexed newOwner);
     event SwapRateUpdated(address indexed token, uint256 indexed swapRate);

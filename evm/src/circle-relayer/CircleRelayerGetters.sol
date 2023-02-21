@@ -6,7 +6,7 @@ import {ICircleIntegration} from "../interfaces/ICircleIntegration.sol";
 
 import "./CircleRelayerSetters.sol";
 
-abstract contract CircleRelayerGetters is CircleRelayerSetters {
+contract CircleRelayerGetters is CircleRelayerSetters {
     function owner() public view returns (address) {
         return _state.owner;
     }

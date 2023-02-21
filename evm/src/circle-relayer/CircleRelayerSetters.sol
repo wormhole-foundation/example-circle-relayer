@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import "./CircleRelayerState.sol";
 
-abstract contract CircleRelayerSetters is CircleRelayerState {
+contract CircleRelayerSetters is CircleRelayerState {
     function setOwner(address owner_) internal {
         _state.owner = owner_;
     }

@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import {IWormhole} from "../interfaces/IWormhole.sol";
 
-abstract contract CircleRelayerStorage {
+contract CircleRelayerStorage {
     struct State {
         // Wormhole chain ID of this contract
         uint16 chainId;
@@ -55,7 +55,7 @@ abstract contract CircleRelayerStorage {
     }
 }
 
-abstract contract CircleRelayerState {
+contract CircleRelayerState {
     CircleRelayerStorage.State _state;
 }
 
