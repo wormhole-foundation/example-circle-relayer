@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache 2
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -131,19 +131,16 @@ contract CircleRelayerTest is Test, ForgeHelpers {
             address(setup),
             abi.encodeWithSelector(
                 bytes4(
-                    keccak256("setup(address,uint16,address,address,uint256)")
+                    keccak256("setup(address,uint16,address,address,uint8)")
                 ),
                 address(implementation),
                 uint16(wormhole.chainId()),
                 address(wormhole),
                 vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
-                1e8 // initial swap rate precision
+                uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS"))
             )
         );
         relayer = ICircleRelayer(address(proxy));
-
-        // set the initial relayer fee to 1 USDC
-        relayer.updateRelayerFee(relayer.chainId(), address(usdc), 1e6);
 
         // set the native swap rate to 0.01 avax
         relayer.updateNativeSwapRate(
@@ -240,14 +237,25 @@ contract CircleRelayerTest is Test, ForgeHelpers {
     function testTransferTokensWithRelay(
         uint256 amount,
         uint256 toNativeTokenAmount,
-        bytes32 targetRecipientWallet
+        uint256 encodedRelayerFee
     ) public {
-        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
-        vm.assume(targetRecipientWallet != bytes32(0));
-        vm.assume(amount > toNativeTokenAmount);
+        amount = bound(amount, 1, MAX_BURN_AMOUNT);
+        toNativeTokenAmount = bound(toNativeTokenAmount, 0, amount - 1);
+        encodedRelayerFee = bound(
+            encodedRelayerFee,
+            0,
+            amount - toNativeTokenAmount - 1
+        );
 
         // register the target contract
         relayer.registerContract(targetChain, targetContract);
+
+        // set the initial relayer fee to 1 USDC
+        relayer.updateRelayerFee(
+            targetChain,
+            address(usdc),
+            encodedRelayerFee
+        );
 
         // mint usdc to address(this)
         circleSimulator.mintUSDC(amount);
@@ -273,7 +281,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
             amount,
             toNativeTokenAmount,
             targetChain,
-            targetRecipientWallet
+            addressToBytes32(address(this))
         );
 
         // fetch recorded logs
@@ -318,10 +326,10 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         assertEq(transfer.payloadId, 1);
         assertEq(
             transfer.targetRelayerFee,
-            relayer.relayerFee(targetChain, address(usdc))
+            encodedRelayerFee
         );
         assertEq(transfer.toNativeTokenAmount, toNativeTokenAmount);
-        assertEq(transfer.targetRecipientWallet, targetRecipientWallet);
+        assertEq(transfer.targetRecipientWallet, addressToBytes32(address(this)));
 
         // confirm that the relayer contract didn't eat the tokens
         assertEq(
@@ -413,15 +421,26 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         uint256 amount,
         uint256 toNativeTokenAmount
     ) public {
-        vm.assume(amount > 0 && amount < usdc.totalSupply());
         vm.assume(
-            amount < toNativeTokenAmount + relayer.relayerFee(
-                targetChain, address(usdc)
-            )
+            amount > 0 && amount
+            < usdc.totalSupply() &&
+            toNativeTokenAmount < usdc.totalSupply()
         );
 
         // register the target contract
         relayer.registerContract(targetChain, targetContract);
+
+        // set the initial relayer fee to 1 USDC
+        uint256 targetRelayerFee = 1e6;
+        relayer.updateRelayerFee(
+            targetChain,
+            address(usdc),
+            targetRelayerFee
+        );
+
+        vm.assume(
+            amount < toNativeTokenAmount + targetRelayerFee
+        );
 
         // mint usdc to address(this)
         circleSimulator.mintUSDC(amount);
@@ -556,7 +575,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         uint16 emitterChainId,
         bytes32 emitterAddress,
         ICircleIntegration.DepositWithPayload memory deposit
-    ) internal view returns (bytes memory signedTransfer) {
+    ) internal returns (bytes memory signedTransfer) {
         // construct `DepositWithPayload` Wormhole message
         IWormhole.VM memory vm;
 
@@ -608,17 +627,11 @@ contract CircleRelayerTest is Test, ForgeHelpers {
      */
     function testRedeemTransferTokensWithRelayZeroNative(
         uint8 counter,
-        uint256 amount
+        uint256 amount,
+        uint256 encodedRelayerFee
     ) public {
-        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
-
-        // Fetch relayer fee from target contract, which is the relayer contract
-        // in this case.
-        uint256 encodedRelayerFee = relayer.relayerFee(
-            relayer.chainId(),
-            address(usdc)
-        );
-        vm.assume(amount > encodedRelayerFee);
+        amount = bound(amount, 1, MAX_BURN_AMOUNT);
+        encodedRelayerFee = bound(encodedRelayerFee, 0, amount - 1);
 
         /**
          * Create TransferTokensWithRelay payload and then create the
@@ -717,12 +730,8 @@ contract CircleRelayerTest is Test, ForgeHelpers {
     ) public {
         vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
 
-        // Fetch relayer fee from target contract, which is the relayer contract
-        // in this case.
-        uint256 encodedRelayerFee = relayer.relayerFee(
-            relayer.chainId(),
-            address(usdc)
-        );
+        // set the encoded relayer fee to 0
+        uint256 encodedRelayerFee = 0;
         vm.assume(amount > encodedRelayerFee);
 
         /**
@@ -774,13 +783,6 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // register the target contract
         relayer.registerContract(targetChain, targetContract);
 
-        // set the relayer fee to zero
-        relayer.updateRelayerFee(
-            relayer.chainId(),
-            address(usdc),
-            0
-        );
-
         // initiate Balances struct
         Balances memory tokenBalances;
 
@@ -822,22 +824,16 @@ contract CircleRelayerTest is Test, ForgeHelpers {
     function testRedeemTransferTokensWithRelayWithNative(
         uint8 counter,
         uint256 amount,
-        uint256 toNativeTokenAmount
+        uint256 toNativeTokenAmount,
+        uint256 encodedRelayerFee
     ) public {
-        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
-        vm.assume(
-            toNativeTokenAmount > 0 &&
-            toNativeTokenAmount < amount &&
-            toNativeTokenAmount < type(uint96).max
+        amount = bound(amount, 1, MAX_BURN_AMOUNT);
+        toNativeTokenAmount = bound(toNativeTokenAmount, 0, amount - 1);
+        encodedRelayerFee = bound(
+            encodedRelayerFee,
+            0,
+            amount - toNativeTokenAmount - 1
         );
-
-        // Fetch relayer fee from target contract, which is the relayer contract
-        // in this case.
-        uint256 encodedRelayerFee = relayer.relayerFee(
-            relayer.chainId(),
-            address(usdc)
-        );
-        vm.assume(amount > encodedRelayerFee + toNativeTokenAmount);
 
         /**
          * Create TransferTokensWithRelay payload and then create the
@@ -979,21 +975,16 @@ contract CircleRelayerTest is Test, ForgeHelpers {
     function testRedeemTransferTokensWithRelaySelfRedeem(
         uint8 counter,
         uint256 amount,
-        uint256 toNativeTokenAmount
+        uint256 toNativeTokenAmount,
+        uint256 encodedRelayerFee
     ) public {
-        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
-        vm.assume(
-            toNativeTokenAmount < amount &&
-            toNativeTokenAmount < type(uint96).max
+        amount = bound(amount, 1, MAX_BURN_AMOUNT);
+        toNativeTokenAmount = bound(toNativeTokenAmount, 0, amount - 1);
+        encodedRelayerFee = bound(
+            encodedRelayerFee,
+            0,
+            amount - toNativeTokenAmount - 1
         );
-
-        // Fetch relayer fee from target contract, which is the relayer contract
-        // in this case.
-        uint256 encodedRelayerFee = relayer.relayerFee(
-            relayer.chainId(),
-            address(usdc)
-        );
-        vm.assume(amount > encodedRelayerFee + toNativeTokenAmount);
 
         /**
          * Create TransferTokensWithRelay payload and then create the
@@ -1076,141 +1067,23 @@ contract CircleRelayerTest is Test, ForgeHelpers {
     }
 
     /**
-     * @notice This test confirms that redeemTokens correctly mints tokens to
-     * the user, and pays the relayer the encoded fee. This tests explicitly
-     * encodes a relayer fee that is less than the fee in the relayer contract's
-     * state. The contract should use the minimum of the two.
-     */
-    function testRedeemTransferTokensWithRelayInconsistentFee(
-        uint8 counter,
-        uint256 amount,
-        uint256 encodedRelayerFee
-    ) public {
-        // set toNativeTokenAmount to zero
-        uint256 toNativeTokenAmount = 0;
-
-        // fetch the relayer fee from the target contract (relayer contract)
-        uint256 stateRelayerFee = relayer.relayerFee(
-            relayer.chainId(),
-            address(usdc)
-        );
-        vm.assume(encodedRelayerFee != stateRelayerFee);
-        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
-        vm.assume(encodedRelayerFee < amount);
-
-        /**
-         * Create TransferTokensWithRelay payload and then create the
-         * DepositWithPayload wormhole message.
-         *
-         * Encode the relayer fee on the target chain (eth) so that
-         * contract doensn't override the relayer fee in this test.
-         */
-        bytes memory transferWithRelayPayload = relayer.encodeTransferTokensWithRelay(
-            ICircleRelayer.TransferTokensWithRelay({
-                payloadId: 1,
-                targetRelayerFee: encodedRelayerFee,
-                toNativeTokenAmount: toNativeTokenAmount,
-                targetRecipientWallet: addressToBytes32(recipientWallet)
-            })
-        );
-
-        // build the DepositWithPayload struct
-        ICircleIntegration.DepositWithPayload memory deposit =
-            ICircleIntegration.DepositWithPayload({
-                token: addressToBytes32(address(usdc)),
-                amount: amount,
-                sourceDomain: integration.getDomainFromChainId(targetChain),
-                targetDomain: integration.localDomain(),
-                nonce: type(uint64).max - counter,
-                fromAddress: targetContract,
-                mintRecipient: addressToBytes32(address(relayer)),
-                payload: transferWithRelayPayload
-            });
-
-        // redeem parameters to invoke the contract with
-        ICircleIntegration.RedeemParameters memory redeemParams;
-        redeemParams.encodedWormholeMessage = createDepositWithPayloadMessage(
-            targetChain,
-            addressToBytes32(foreignCircleIntegrationAddress),
-            deposit
-        );
-
-        // create Circle redeem parameters
-        redeemParams.circleBridgeMessage = createCircleMessageFromEth(
-            deposit
-        );
-
-        redeemParams.circleAttestation = circleSimulator.attestCircleMessage(
-            redeemParams.circleBridgeMessage
-        );
-
-        // register the target contract
-        relayer.registerContract(targetChain, targetContract);
-
-        // check token balance of the recipient and relayer
-        Balances memory tokenBalances;
-        tokenBalances.recipientBefore = getBalance(
-            address(usdc),
-            recipientWallet
-        );
-        tokenBalances.relayerBefore = getBalance(
-            address(usdc),
-            relayerWallet
-        );
-
-        // check the native balance of the recipient
-        Balances memory ethBalances;
-        ethBalances.recipientBefore = recipientWallet.balance;
-
-        // prank relayer and call redeemTokens
-        vm.prank(relayerWallet);
-        relayer.redeemTokens(redeemParams);
-
-        // check token balance of the recipient and relayer
-        tokenBalances.recipientAfter = getBalance(
-            address(usdc),
-            recipientWallet
-        );
-        tokenBalances.relayerAfter = getBalance(
-            address(usdc),
-            relayerWallet
-        );
-
-        // check the native balance of the recipient and relayer
-        ethBalances.recipientAfter = recipientWallet.balance;
-
-        // detemine which relayer fee the contract should use
-        uint256 expectedRelayerFee =
-            encodedRelayerFee < stateRelayerFee ? encodedRelayerFee : stateRelayerFee;
-
-        // validate token balances
-        assertEq(
-            tokenBalances.recipientAfter - tokenBalances.recipientBefore,
-            amount - expectedRelayerFee
-        );
-        assertEq(
-            tokenBalances.relayerAfter - tokenBalances.relayerBefore,
-            expectedRelayerFee
-        );
-    }
-
-    /**
      * @notice This test confirms that the contract reverts if the fromAddress
      * in the DepositWithPayload message is not a registered contract.
      */
     function testRedeemTransferTokensWithRelayInvalidFromAddress(
         uint8 counter,
-        uint256 amount
+        uint256 amount,
+        uint256 encodedRelayerFee
     ) public {
+        amount = bound(amount, 1, MAX_BURN_AMOUNT);
+        encodedRelayerFee = bound(
+            encodedRelayerFee,
+            0,
+            amount - 1
+        );
+
         // set toNativeTokenAmount to zero
         uint256 toNativeTokenAmount = 0;
-
-        // fetch the relayer fee from the target contract (relayer contract)
-        uint256 encodedRelayerFee = relayer.relayerFee(
-            relayer.chainId(),
-            address(usdc)
-        );
-        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
 
         /**
          * Create TransferTokensWithRelay payload and then create the
@@ -1277,21 +1150,16 @@ contract CircleRelayerTest is Test, ForgeHelpers {
     function testRedeemTransferTokensWithRelayInvalidSelfRedeem(
         uint8 counter,
         uint256 amount,
-        uint256 toNativeTokenAmount
+        uint256 toNativeTokenAmount,
+        uint256 encodedRelayerFee
     ) public {
-        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
-        vm.assume(
-            toNativeTokenAmount < amount &&
-            toNativeTokenAmount < type(uint96).max
+        amount = bound(amount, 1, MAX_BURN_AMOUNT);
+        toNativeTokenAmount = bound(toNativeTokenAmount, 0, amount - 1);
+        encodedRelayerFee = bound(
+            encodedRelayerFee,
+            0,
+            amount - toNativeTokenAmount - 1
         );
-
-        // Fetch relayer fee from target contract, which is the relayer contract
-        // in this case.
-        uint256 encodedRelayerFee = relayer.relayerFee(
-            relayer.chainId(),
-            address(usdc)
-        );
-        vm.assume(amount > encodedRelayerFee + toNativeTokenAmount);
 
         /**
          * Create TransferTokensWithRelay payload and then create the
@@ -1372,21 +1240,16 @@ contract CircleRelayerTest is Test, ForgeHelpers {
     function testRedeemTransferTokensWithRelayInsufficientSwapAmount(
         uint8 counter,
         uint256 amount,
-        uint256 toNativeTokenAmount
+        uint256 toNativeTokenAmount,
+        uint256 encodedRelayerFee
     ) public {
-        vm.assume(amount > 0 && amount < MAX_BURN_AMOUNT);
-        vm.assume(
-            toNativeTokenAmount < amount &&
-            toNativeTokenAmount < type(uint96).max
+        amount = bound(amount, 1, MAX_BURN_AMOUNT);
+        toNativeTokenAmount = bound(toNativeTokenAmount, 0, amount - 1);
+        encodedRelayerFee = bound(
+            encodedRelayerFee,
+            0,
+            amount - toNativeTokenAmount - 1
         );
-
-        // Fetch relayer fee from target contract, which is the relayer contract
-        // in this case.
-        uint256 encodedRelayerFee = relayer.relayerFee(
-            relayer.chainId(),
-            address(usdc)
-        );
-        vm.assume(amount > encodedRelayerFee + toNativeTokenAmount);
 
         /**
          * Create TransferTokensWithRelay payload and then create the

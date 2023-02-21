@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache 2
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.17;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
@@ -41,12 +41,12 @@ contract ContractScript is Script {
         proxy = new CircleRelayerProxy(
             address(setup),
             abi.encodeWithSelector(
-                bytes4(keccak256("setup(address,uint16,address,address,uint256)")),
+                bytes4(keccak256("setup(address,uint16,address,address,uint8)")),
                 address(implementation),
                 wormhole.chainId(),
                 address(wormhole),
                 address(circleIntegration),
-                vm.envUint("RELEASE_SWAP_RATE_PRECISION")
+                uint8(vm.envUint("RELEASE_NATIVE_TOKEN_DECIMALS"))
             )
         );
 

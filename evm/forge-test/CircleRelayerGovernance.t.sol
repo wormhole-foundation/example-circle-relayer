@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache 2
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -93,13 +93,13 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
             address(setup),
             abi.encodeWithSelector(
                 bytes4(
-                    keccak256("setup(address,uint16,address,address,uint256)")
+                    keccak256("setup(address,uint16,address,address,uint8)")
                 ),
                 address(implementation),
                 uint16(wormhole.chainId()),
                 address(wormhole),
                 vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
-                1e8 // initial swap rate precision
+                uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS"))
             )
         );
         relayer = ICircleRelayer(address(proxy));
@@ -310,7 +310,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
      * for any registered relayer contract.
      */
     function testUpdateRelayerFee(uint16 chainId_, uint256 relayerFee) public {
-        vm.assume(chainId_ != 0 && chainId_ != relayer.chainId());
+        vm.assume(chainId_ != relayer.chainId() && chainId_ != 0);
 
         // register random target contract
         relayer.registerContract(chainId_, addressToBytes32(address(this)));
@@ -331,13 +331,10 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
      * for a registered relayer contract or for its own chainId.
      */
     function testUpdateRelayerFeeContractNotRegistered(uint16 chainId_) public {
-        if (chainId_ != relayer.chainId()) {
-            // expect revert
-            vm.expectRevert("contract doesn't exist");
-        }
+        vm.assume(chainId_ != relayer.chainId() && chainId_ != 0);
 
-        // Attempt to update relayer fee with out registering a contract for
-        // the chainId.
+        // expect the call to revert
+        vm.expectRevert("contract doesn't exist");
         relayer.updateRelayerFee(
             chainId_,
             address(usdc),
@@ -346,19 +343,42 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     }
 
     /**
-     * @notice This test confirms that the owner cannot update the relayer
-     * fee for a token that is not accepted by the Circle Integration contract.
+     * @notice This test confirms that the owner cannot update the relayerFee
+     * for the deployed chainId.
      */
-    function testUpdateRelayerFeeInvalidToken() public {
-        address invalidTokenAddress = address(this);
-        uint256 relayerFee = 1e8;
-
+    function testUpdateRelayerFeeNotThisChain() public {
         // expect the updateRelayerFee method call to fail
         bytes memory encodedSignature = abi.encodeWithSignature(
             "updateRelayerFee(uint16,address,uint256)",
             relayer.chainId(),
+            address(usdc),
+            1e4
+        );
+        expectRevert(
+            address(relayer),
+            encodedSignature,
+            "invalid chain"
+        );
+    }
+
+    /**
+     * @notice This test confirms that the owner cannot update the relayer
+     * fee for a token that is not accepted by the Circle Integration contract.
+     */
+    function testUpdateRelayerFeeInvalidToken(uint16 chainId_) public {
+        vm.assume(chainId_ != relayer.chainId() && chainId_ != 0);
+
+        address invalidTokenAddress = address(this);
+
+        // register random target contract
+        relayer.registerContract(chainId_, addressToBytes32(address(this)));
+
+        // expect the updateRelayerFee method call to fail
+        bytes memory encodedSignature = abi.encodeWithSignature(
+            "updateRelayerFee(uint16,address,uint256)",
+            chainId_,
             invalidTokenAddress,
-            relayerFee
+            1e8
         );
         expectRevert(
             address(relayer),
@@ -744,6 +764,90 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         );
 
         vm.stopPrank();
+    }
+
+    /**
+     * @notice This test confirms that the owner can cancel the ownership-transfer
+     * process.
+     */
+    function testCancelOwnershipTransferRequest(address newOwner) public {
+        vm.assume(newOwner != address(this) && newOwner != address(0));
+
+        // set the pending owner
+        relayer.submitOwnershipTransferRequest(
+            relayer.chainId(),
+            newOwner
+        );
+        assertEq(relayer.pendingOwner(), newOwner);
+
+        // cancel the request to change ownership of the contract
+        relayer.cancelOwnershipTransferRequest(relayer.chainId());
+
+        // confirm that the pending owner was set to the zero address
+        assertEq(relayer.pendingOwner(), address(0));
+
+        vm.startPrank(newOwner);
+
+        // expect the confirmOwnershipTransferRequest call to revert
+        vm.expectRevert("caller must be pendingOwner");
+        relayer.confirmOwnershipTransferRequest();
+
+        vm.stopPrank();
+    }
+
+    /**
+     * @notice This test confirms that the owner cannot submit a request to
+     * cancel the ownership-transfer process on the wrong chain.
+     */
+    function testCancelOwnershipTransferRequestWrongChain(uint16 chainId_) public {
+        vm.assume(chainId_ != relayer.chainId());
+
+        address wallet = makeAddr("wallet");
+
+        // set the pending owner
+        relayer.submitOwnershipTransferRequest(
+            relayer.chainId(),
+            wallet // random input
+        );
+
+        // expect the cancelOwnershipTransferRequest call to revert
+        vm.expectRevert("wrong chain");
+        relayer.cancelOwnershipTransferRequest(chainId_);
+
+        // confirm pending owner is still set to address(this)
+        assertEq(relayer.pendingOwner(), wallet);
+    }
+
+    /**
+     * @notice This test confirms that ONLY the owner can submit a request
+     * to cancel the ownership-transfer process of the contract.
+     */
+    function testCancelOwnershipTransferRequestOwnerOnly() public {
+        address wallet = makeAddr("wallet");
+
+        // set the pending owner
+        relayer.submitOwnershipTransferRequest(
+            relayer.chainId(),
+            wallet // random input
+        );
+
+        vm.startPrank(wallet);
+
+        // expect the cancelOwnershipTransferRequest call to revert
+        bytes memory encodedSignature = abi.encodeWithSignature(
+            "cancelOwnershipTransferRequest(uint16)",
+            relayer.chainId()
+        );
+        expectRevert(
+            address(relayer),
+            encodedSignature,
+            "caller not the owner"
+        );
+
+        vm.stopPrank();
+
+        // confirm pending owner is still set to address(this)
+        assertEq(relayer.pendingOwner(), wallet);
     }
 
     /**

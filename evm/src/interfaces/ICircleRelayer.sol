@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache 2
 
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
 import {IWormhole} from "./IWormhole.sol";
 import {ICircleIntegration} from "./ICircleIntegration.sol";
@@ -35,9 +35,9 @@ interface ICircleRelayer {
 
     function upgrade(uint16 chainId_, address newImplementation) external;
 
-    function updateWormholeFinality(uint16 chainId_, uint8 newWormholeFinality) external;
-
     function submitOwnershipTransferRequest(uint16 chainId_, address newOwner) external;
+
+    function cancelOwnershipTransferRequest(uint16 chainId_) external;
 
     function confirmOwnershipTransferRequest() external;
 

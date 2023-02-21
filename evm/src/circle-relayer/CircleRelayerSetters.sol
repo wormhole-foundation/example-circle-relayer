@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache 2
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
 import "./CircleRelayerState.sol";
 
@@ -22,6 +22,10 @@ contract CircleRelayerSetters is CircleRelayerState {
 
     function setChainId(uint16 chainId_) internal {
         _state.chainId = chainId_;
+    }
+
+    function setNativeTokenDecimals(uint8 decimals_) internal {
+        _state.nativeTokenDecimals = decimals_;
     }
 
     function setCircleIntegration(address circleIntegration_) internal {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache 2
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -161,14 +161,12 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
             uint256 maxToNativeAllowed = calculateMaxSwapAmountIn(token);
             if (transferMessage.toNativeTokenAmount > maxToNativeAllowed) {
                 transferMessage.toNativeTokenAmount = maxToNativeAllowed;
-                nativeAmountForRecipient = maxNativeSwapAmount(token);
-            } else {
-                // compute amount of native asset to pay the recipient
-                nativeAmountForRecipient = calculateNativeSwapAmountOut(
-                    token,
-                    transferMessage.toNativeTokenAmount
-                );
             }
+            // compute amount of native asset to pay the recipient
+            nativeAmountForRecipient = calculateNativeSwapAmountOut(
+                token,
+                transferMessage.toNativeTokenAmount
+            );
 
             /**
              * The nativeAmountForRecipient can be zero if the user specifed a toNativeTokenAmount
@@ -201,25 +199,16 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
             }
         }
 
-        /**
-         * Override the relayerFee if the encoded targetRelayerFee is less
-         * than the relayer fee set on this chain. This should only happen
-         * if relayer fees are not synchronized across all chains.
-         */
-        uint256 relayerFee = relayerFee(chainId(), token);
-        if (relayerFee > transferMessage.targetRelayerFee) {
-            relayerFee = transferMessage.targetRelayerFee;
-        }
-
         // add the token swap amount to the relayer fee
-        relayerFee = relayerFee + transferMessage.toNativeTokenAmount;
+        uint256 amountForRelayer =
+            transferMessage.targetRelayerFee + transferMessage.toNativeTokenAmount;
 
         // pay the relayer if relayerFee > 0 and the caller is not the recipient
-        if (relayerFee > 0) {
+        if (amountForRelayer > 0) {
             SafeERC20.safeTransfer(
                 IERC20(token),
                 msg.sender,
-                relayerFee
+                amountForRelayer
             );
         }
 
@@ -227,7 +216,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         SafeERC20.safeTransfer(
             IERC20(token),
             recipient,
-            deposit.amount - relayerFee
+            deposit.amount - amountForRelayer
         );
     }
 
@@ -246,9 +235,20 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         // cache swap rate
         uint256 swapRate = nativeSwapRate(token);
         require(swapRate > 0, "swap rate not set");
-        maxAllowed =
-            (maxNativeSwapAmount(token) * swapRate) /
-            (10 ** (18 - tokenDecimals(token)) * nativeSwapRatePrecision());
+
+        // cache token decimals
+        uint8 tokenDecimals_ = tokenDecimals(token);
+        uint8 nativeDecimals = nativeTokenDecimals();
+
+        if (tokenDecimals_ > nativeDecimals) {
+            maxAllowed =
+                maxNativeSwapAmount(token) * swapRate *
+                10 ** (tokenDecimals_ - nativeDecimals) / nativeSwapRatePrecision();
+        } else {
+            maxAllowed =
+                (maxNativeSwapAmount(token) * swapRate) /
+                (10 ** (nativeDecimals - tokenDecimals_) * nativeSwapRatePrecision());
+        }
     }
 
     /**
@@ -267,9 +267,20 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         // cache swap rate
         uint256 swapRate = nativeSwapRate(token);
         require(swapRate > 0, "swap rate not set");
-        nativeAmount =
-            nativeSwapRatePrecision() * toNativeAmount /
-            swapRate * 10 ** (18 - tokenDecimals(token));
+
+        // cache token decimals
+        uint8 tokenDecimals_ = tokenDecimals(token);
+        uint8 nativeDecimals = nativeTokenDecimals();
+
+        if (tokenDecimals_ > nativeDecimals) {
+            nativeAmount =
+                nativeSwapRatePrecision() * toNativeAmount /
+                (swapRate * 10 ** (tokenDecimals_ - nativeDecimals));
+        } else {
+            nativeAmount =
+                nativeSwapRatePrecision() * toNativeAmount *
+                10 ** (nativeDecimals - tokenDecimals_) / swapRate;
+        }
     }
 
     function tokenDecimals(address token) internal view returns (uint8) {

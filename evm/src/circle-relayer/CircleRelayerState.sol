@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache 2
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
 import {IWormhole} from "../interfaces/IWormhole.sol";
 
@@ -7,6 +7,9 @@ contract CircleRelayerStorage {
     struct State {
         // Wormhole chain ID of this contract
         uint16 chainId;
+
+        // decimals of the native token on this chain
+        uint8 nativeTokenDecimals;
 
         // owner of this contract
         address owner;

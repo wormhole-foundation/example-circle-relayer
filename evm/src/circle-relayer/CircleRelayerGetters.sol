@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache 2
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
 import {IWormhole} from "../interfaces/IWormhole.sol";
 import {ICircleIntegration} from "../interfaces/ICircleIntegration.sol";
@@ -25,6 +25,10 @@ contract CircleRelayerGetters is CircleRelayerSetters {
 
     function chainId() public view returns (uint16) {
         return _state.chainId;
+    }
+
+    function nativeTokenDecimals() public view returns (uint8) {
+        return _state.nativeTokenDecimals;
     }
 
     function circleIntegration() public view returns (ICircleIntegration) {

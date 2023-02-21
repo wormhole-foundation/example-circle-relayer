@@ -1,7 +1,7 @@
 import {ethers} from "ethers";
 
 // ethereum goerli testnet fork
-export const ETH_LOCALHOST = "http://localhost:8545";
+export const ETH_LOCALHOST = "http://localhost:8546";
 export const ETH_FORK_CHAIN_ID = Number(process.env.ETH_FORK_CHAIN_ID!);
 export const ETH_WORMHOLE_ADDRESS = process.env.ETH_WORMHOLE_ADDRESS!;
 export const ETH_USDC_TOKEN_ADDRESS = process.env.ETH_USDC_TOKEN_ADDRESS!;
@@ -10,7 +10,7 @@ export const ETH_CIRCLE_INTEGRATION_ADDRESS =
   process.env.ETH_CIRCLE_INTEGRATION_ADDRESS!;
 
 // avalanche fuji testnet fork
-export const AVAX_LOCALHOST = "http://localhost:8546";
+export const AVAX_LOCALHOST = "http://localhost:8547";
 export const AVAX_FORK_CHAIN_ID = Number(process.env.AVAX_FORK_CHAIN_ID!);
 export const AVAX_WORMHOLE_ADDRESS = process.env.AVAX_WORMHOLE_ADDRESS!;
 export const AVAX_USDC_TOKEN_ADDRESS = process.env.AVAX_USDC_TOKEN_ADDRESS!;
