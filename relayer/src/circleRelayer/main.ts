@@ -7,6 +7,7 @@ import {
   getSignedVAAWithRetry,
   uint8ArrayToHex,
   tryUint8ArrayToNative,
+  tryHexToNativeAssetString,
 } from "@certusone/wormhole-sdk";
 import {Implementation__factory} from "@certusone/wormhole-sdk/lib/cjs/ethers-contracts";
 import {TypedEvent} from "@certusone/wormhole-sdk/lib/cjs/ethers-contracts/commons";
@@ -58,19 +59,22 @@ const SIGNERS = {
   [CHAIN_ID_AVAX]: new Wallet(PK, PROVIDERS[CHAIN_ID_AVAX]),
 };
 
+// Circle Bridge contracts
 const CIRCLE_EMITTER_ADDRESSES = {
   [CHAIN_ID_ETH]: "0x26413e8157CD32011E726065a5462e97dD4d03D9",
   [CHAIN_ID_AVAX]: "0xa9fB1b3009DCb79E2fe346c16a604B8Fa8aE0a79",
 };
 
+// USDC relayer contracts
 const USDC_RELAYER = {
-  [CHAIN_ID_ETH]: "0xC0a4e16a5B1e7342EF9c2837F4c94cB66A91601C",
-  [CHAIN_ID_AVAX]: "0xfC6d1D7A5a511F9555Fc013a296Ed47c9C297fB3",
+  [CHAIN_ID_ETH]: "0xbd227cd0513889752a792c98dab42dc4d952a33b",
+  [CHAIN_ID_AVAX]: "0x45ecf5c7cf9e73954277cb7d932d5311b0f64982",
 };
 
+// Wormhole circle integration contracts
 const USDC_WH_SENDER = {
-  [CHAIN_ID_ETH]: "0xbdcc4ebe3157df347671e078a41ee5ce137cd306",
-  [CHAIN_ID_AVAX]: "0xb200977d46aea35ce6368d181534f413570a0f54",
+  [CHAIN_ID_ETH]: "0x0a69146716b3a21622287efa1607424c663069a4",
+  [CHAIN_ID_AVAX]: "0x58f4c17449c90665891c42e14d34aae7a26a472e",
 };
 
 const USDC_WH_EMITTER = {
@@ -96,6 +100,35 @@ const WORMHOLE_CONTRACTS = {
 
 // testnet guardian host
 const WORMHOLE_RPC_HOSTS = ["https://wormhole-v2-testnet-api.certus.one"];
+
+function relayerContract(
+  address: string,
+  signer: ethers.Signer
+): ethers.Contract {
+  const contract = new Contract(
+    address,
+    [
+      "function redeemTokens((bytes,bytes,bytes)) payable",
+      "function calculateNativeSwapAmountOut(address,uint256) view returns (uint256)",
+    ],
+    signer
+  );
+
+  return contract;
+}
+
+function integrationContract(
+  address: string,
+  signer: ethers.Signer
+): ethers.Contract {
+  const contract = new Contract(
+    address,
+    ["function fetchLocalTokenAddress(uint32,bytes32) view returns (bytes32)"],
+    signer
+  );
+
+  return contract;
+}
 
 function findCircleMessageInLogs(
   logs: ethers.providers.Log[],
@@ -210,16 +243,10 @@ function handleRelayerEvent(
         toChain
       );
 
-      // parse the token address and toNativeAmount
-      const token = tryUint8ArrayToNative(
-        payloadArray.subarray(1, 33),
-        toChain
-      );
-      const toNativeAmount = ethers.utils.hexlify(
-        payloadArray.subarray(180, 212)
-      );
-
-      if (ethers.utils.getAddress(mintRecipient) != USDC_RELAYER[fromChain]) {
+      if (
+        ethers.utils.getAddress(mintRecipient) !=
+        ethers.utils.getAddress(USDC_RELAYER[fromChain])
+      ) {
         console.warn(
           `Unknown mintRecipient: ${mintRecipient} for chainId: ${toChain}, terminating relay`
         );
@@ -261,18 +288,30 @@ function handleRelayerEvent(
       console.log("All redeem parameters have been located");
 
       // create target contract instance
-      const contract = new Contract(
-        USDC_RELAYER[toChain],
-        [
-          "function redeemTokens((bytes,bytes,bytes)) payable",
-          "function calculateNativeSwapAmountOut(address,uint256) view returns (uint256)",
-        ],
+      const contract = relayerContract(USDC_RELAYER[toChain], SIGNERS[toChain]);
+
+      // Find the address of the encoded token on the target chain. The address
+      // that is encoded in the payload is the address on the source chain.
+      console.log("Fetching token address from target chain.");
+      const targetTokenAddress = await integrationContract(
+        USDC_WH_SENDER[toChain],
         SIGNERS[toChain]
+      ).fetchLocalTokenAddress(
+        fromDomain,
+        payloadArray.subarray(1, 33) // encoded token address
+      );
+
+      // parse the toNativeTokenAmount
+      const toNativeAmount = ethers.utils.hexlify(
+        payloadArray.subarray(180, 212)
       );
 
       // query for native amount to swap with contract
       const nativeSwapQuote = await contract.calculateNativeSwapAmountOut(
-        token,
+        tryUint8ArrayToNative(
+          ethers.utils.arrayify(targetTokenAddress),
+          toChain
+        ),
         toNativeAmount
       );
       console.log(
