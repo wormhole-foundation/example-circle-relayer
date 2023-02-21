@@ -260,7 +260,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // mint usdc to address(this)
         circleSimulator.mintUSDC(amount);
 
-        // approve the circle relayer to spend tokesn
+        // approve the circle relayer to spend tokens
         SafeERC20.safeApprove(
             IERC20(address(usdc)),
             address(relayer),
@@ -363,7 +363,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // mint usdc to address(this)
         circleSimulator.mintUSDC(amount);
 
-        // approve the circle relayer to spend tokesn
+        // approve the circle relayer to spend tokens
         SafeERC20.safeApprove(
             IERC20(token),
             address(relayer),
@@ -395,7 +395,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // mint usdc to address(this)
         circleSimulator.mintUSDC(amount);
 
-        // approve the circle relayer to spend tokesn
+        // approve the circle relayer to spend tokens
         SafeERC20.safeApprove(
             IERC20(address(usdc)),
             address(relayer),
@@ -445,7 +445,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // mint usdc to address(this)
         circleSimulator.mintUSDC(amount);
 
-        // approve the circle relayer to spend tokesn
+        // approve the circle relayer to spend tokens
         SafeERC20.safeApprove(
             IERC20(address(usdc)),
             address(relayer),
@@ -481,7 +481,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // register the target contract
         relayer.registerContract(targetChain, targetContract);
 
-        // approve the circle relayer to spend tokesn
+        // approve the circle relayer to spend tokens
         SafeERC20.safeApprove(
             IERC20(address(usdc)),
             address(relayer),
@@ -517,7 +517,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // register the target contract
         relayer.registerContract(targetChain, targetContract);
 
-        // approve the circle relayer to spend tokesn
+        // approve the circle relayer to spend tokens
         SafeERC20.safeApprove(
             IERC20(address(usdc)),
             address(relayer),
@@ -553,7 +553,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // register the target contract
         relayer.registerContract(targetChain, targetContract);
 
-        // approve the circle relayer to spend tokesn
+        // approve the circle relayer to spend tokens
         SafeERC20.safeApprove(
             IERC20(address(usdc)),
             address(relayer),
@@ -652,7 +652,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // build the DepositWithPayload struct
         ICircleIntegration.DepositWithPayload memory deposit =
             ICircleIntegration.DepositWithPayload({
-                token: addressToBytes32(address(usdc)),
+                token: addressToBytes32(foreignUsdcAddress),
                 amount: amount,
                 sourceDomain: integration.getDomainFromChainId(targetChain),
                 targetDomain: integration.localDomain(),
@@ -753,7 +753,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // build the DepositWithPayload struct
         ICircleIntegration.DepositWithPayload memory deposit =
             ICircleIntegration.DepositWithPayload({
-                token: addressToBytes32(address(usdc)),
+                token: addressToBytes32(foreignUsdcAddress),
                 amount: amount,
                 sourceDomain: integration.getDomainFromChainId(targetChain),
                 targetDomain: integration.localDomain(),
@@ -854,7 +854,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // build the DepositWithPayload struct
         ICircleIntegration.DepositWithPayload memory deposit =
             ICircleIntegration.DepositWithPayload({
-                token: addressToBytes32(address(usdc)),
+                token: addressToBytes32(foreignUsdcAddress),
                 amount: amount,
                 sourceDomain: integration.getDomainFromChainId(targetChain),
                 targetDomain: integration.localDomain(),
@@ -1005,7 +1005,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // build the DepositWithPayload struct
         ICircleIntegration.DepositWithPayload memory deposit =
             ICircleIntegration.DepositWithPayload({
-                token: addressToBytes32(address(usdc)),
+                token: addressToBytes32(foreignUsdcAddress),
                 amount: amount,
                 sourceDomain: integration.getDomainFromChainId(targetChain),
                 targetDomain: integration.localDomain(),
@@ -1104,7 +1104,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // build the DepositWithPayload struct
         ICircleIntegration.DepositWithPayload memory deposit =
             ICircleIntegration.DepositWithPayload({
-                token: addressToBytes32(address(usdc)),
+                token: addressToBytes32(foreignUsdcAddress),
                 amount: amount,
                 sourceDomain: integration.getDomainFromChainId(targetChain),
                 targetDomain: integration.localDomain(),
@@ -1180,7 +1180,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // build the DepositWithPayload struct
         ICircleIntegration.DepositWithPayload memory deposit =
             ICircleIntegration.DepositWithPayload({
-                token: addressToBytes32(address(usdc)),
+                token: addressToBytes32(foreignUsdcAddress),
                 amount: amount,
                 sourceDomain: integration.getDomainFromChainId(targetChain),
                 targetDomain: integration.localDomain(),
@@ -1270,7 +1270,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // build the DepositWithPayload struct
         ICircleIntegration.DepositWithPayload memory deposit =
             ICircleIntegration.DepositWithPayload({
-                token: addressToBytes32(address(usdc)),
+                token: addressToBytes32(foreignUsdcAddress),
                 amount: amount,
                 sourceDomain: integration.getDomainFromChainId(targetChain),
                 targetDomain: integration.localDomain(),

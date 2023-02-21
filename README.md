@@ -115,10 +115,10 @@ Copy the sample `.env` file in the `relayer` directory and set the values (this 
 cp .env.sample .env
 ```
 
-Copy the `priceRelayerSample.cfg` file in the `relayer/cfg` directory and set the values:
+Copy the `priceRelayerSample.json` file in the `relayer/cfg` directory and set the values:
 
 ```
-cp priceRelayerSample.cfg priceRelayer.cfg
+cp priceRelayerSample.json priceRelayer.json
 ```
 
 To run the off-chain relayer process, check that the contract addresses are correct in the `relayer/src/priceRelayer/main.ts` file, then run the following commands:

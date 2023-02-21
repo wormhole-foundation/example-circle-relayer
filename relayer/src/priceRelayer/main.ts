@@ -35,9 +35,9 @@ const SUPPORTED_CHAINS = [CHAIN_ID_ETH, CHAIN_ID_AVAX];
 type SupportedChainId = typeof SUPPORTED_CHAINS[number];
 
 // circle relayer contract addresses
-const CIRCLE_RELAYER_ADDRESSES = {
-  [CHAIN_ID_ETH]: "0xC0a4e16a5B1e7342EF9c2837F4c94cB66A91601C",
-  [CHAIN_ID_AVAX]: "0xfC6d1D7A5a511F9555Fc013a296Ed47c9C297fB3",
+const USDC_RELAYER = {
+  [CHAIN_ID_ETH]: "0xbd227cd0513889752a792c98dab42dc4d952a33b",
+  [CHAIN_ID_AVAX]: "0x45ecf5c7cf9e73954277cb7d932d5311b0f64982",
 };
 
 // rpc provider
@@ -53,25 +53,46 @@ const SIGNERS = {
 };
 
 // circle relayer contract instances
-const ABI = [
-  "function nativeSwapRate(address) public view returns (uint256)",
-  "function updateNativeSwapRate(uint16,address,uint256) public",
-];
-const CONTRACTS = {
-  [CHAIN_ID_ETH]: new ethers.Contract(
-    CIRCLE_RELAYER_ADDRESSES[CHAIN_ID_ETH],
-    ABI,
-    SIGNERS[CHAIN_ID_ETH]
-  ),
-  [CHAIN_ID_AVAX]: new ethers.Contract(
-    CIRCLE_RELAYER_ADDRESSES[CHAIN_ID_AVAX],
-    ABI,
-    SIGNERS[CHAIN_ID_AVAX]
-  ),
-};
-
 async function sleepFor(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function relayerContract(
+  address: string,
+  signer: ethers.Signer
+): ethers.Contract {
+  const contract = new ethers.Contract(
+    address,
+    [
+      "function nativeSwapRate(address) public view returns (uint256)",
+      "function updateNativeSwapRate(uint16,address,uint256) public",
+      "function nativeSwapRatePrecision() public view returns (uint256)",
+    ],
+    signer
+  );
+
+  return contract;
+}
+
+async function confirmPricePrecision(expectedPrecision: number) {
+  const pricePrecisionBN = ethers.utils.parseUnits("1", expectedPrecision);
+
+  for (const chainId of SUPPORTED_CHAINS) {
+    const relayer = relayerContract(USDC_RELAYER[chainId], SIGNERS[chainId]);
+
+    // fetch the contracts swap rate precision
+    const swapRatePrecision: ethers.BigNumber =
+      await relayer.nativeSwapRatePrecision();
+    console.log(swapRatePrecision, pricePrecisionBN);
+
+    // compare it to the configured precision
+    if (!swapRatePrecision.eq(pricePrecisionBN)) {
+      console.error(
+        `Swap Rate Precision does not match config chainId=${chainId}`
+      );
+      process.exit(1);
+    }
+  }
 }
 
 function createCoingeckoString(relayerConfig: Config): string {
@@ -90,7 +111,7 @@ function createCoingeckoString(relayerConfig: Config): string {
 
 async function main() {
   // read price relayer config
-  const configPath = `${__dirname}/../../cfg/priceRelayer.cfg`;
+  const configPath = `${__dirname}/../../cfg/priceRelayer.json`;
   const relayerConfig = readConfig(configPath);
 
   // create coingeckoId string
@@ -106,6 +127,9 @@ async function main() {
     `Price update minimum percentage change: ${minPriceChangePercentage}%`
   );
 
+  // confirm the price precision on each contract
+  await confirmPricePrecision(relayerConfig.pricePrecision);
+
   // get er done
   while (true) {
     // fetch native and token prices
@@ -118,7 +142,8 @@ async function main() {
         // compute conversion rate for native -> token
         const priceUpdates = makeNativeCurrencyPrices(
           relayerConfig.relayers,
-          coingeckoPrices
+          coingeckoPrices,
+          relayerConfig.pricePrecision
         );
 
         // update contract prices
@@ -126,10 +151,16 @@ async function main() {
           const chainId = config.chainId as SupportedChainId;
           const token = config.tokenContract;
 
+          // fetch the relayer contract instance
+          const contract = relayerContract(
+            USDC_RELAYER[chainId],
+            SIGNERS[chainId]
+          );
+
           // query the contract to fetch the current native swap price
-          const currentPrice: ethers.BigNumber = await CONTRACTS[
-            chainId
-          ].nativeSwapRate(token);
+          const currentPrice: ethers.BigNumber = await contract.nativeSwapRate(
+            token
+          );
           const newPrice = priceUpdates.get(chainId)!;
 
           // compute percentage change
@@ -147,7 +178,7 @@ async function main() {
             if (Math.abs(percentageChange) > minPriceChangePercentage) {
               const gasParams = await PROVIDERS[chainId].getFeeData();
 
-              const receipt = await CONTRACTS[chainId]
+              const receipt = await contract
                 .updateNativeSwapRate(chainId, token, newPrice)
                 .then((tx: ethers.ContractTransaction) => tx.wait())
                 .catch((msg: any) => {
@@ -176,7 +207,8 @@ async function main() {
 
 function makeNativeCurrencyPrices(
   relayerConfigs: RelayerConfig[],
-  coingeckoPrices: any
+  coingeckoPrices: any,
+  pricePrecision: number
 ) {
   // price mapping
   const priceUpdates = new Map<ChainId, ethers.BigNumber>();
@@ -186,10 +218,6 @@ function makeNativeCurrencyPrices(
     const config = relayerConfigs.at(i)!;
     const id = config.nativeId;
     const tokenId = config.tokenId;
-
-    // NOTE: it is very important that the precision is set to the same value
-    // as the swapRatePrecision variable in the smart contract.
-    const precision = config.pricePrecision;
 
     if (id in coingeckoPrices && tokenId in coingeckoPrices) {
       // cache prices
@@ -202,7 +230,7 @@ function makeNativeCurrencyPrices(
       // push native -> token swap rate
       priceUpdates.set(
         config.chainId as ChainId,
-        ethers.utils.parseUnits(swapRate, precision)
+        ethers.utils.parseUnits(swapRate, pricePrecision)
       );
     }
   }

@@ -37,9 +37,14 @@ interface ICircleIntegration {
         bytes memory payload
     ) external payable returns (uint64 messageSequence);
 
-    function redeemTokensWithPayload(RedeemParameters memory params)
-        external
-        returns (DepositWithPayload memory depositWithPayload);
+    function redeemTokensWithPayload(
+        RedeemParameters memory params
+    ) external returns (DepositWithPayload memory depositWithPayload);
+
+    function fetchLocalTokenAddress(
+        uint32 sourceDomain,
+        bytes32 sourceToken
+    ) external view returns (bytes32);
 
     function encodeDepositWithPayload(DepositWithPayload memory message) external pure returns (bytes memory);
 
