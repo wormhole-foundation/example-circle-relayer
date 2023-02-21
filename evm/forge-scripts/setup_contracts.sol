@@ -33,17 +33,9 @@ contract ContractScript is Script {
 
     function setInitialRelayerFee(
         address sourceToken,
-        uint256 sourceRelayerFee,
         uint16 targetChainId,
         uint256 targetRelayerFee
     ) internal {
-        // source chain relayer fee
-        relayer.updateRelayerFee(
-            wormhole.chainId(),
-            sourceToken,
-            sourceRelayerFee
-        );
-
         // target chain relayer fee
         relayer.updateRelayerFee(
             targetChainId,
@@ -52,10 +44,6 @@ contract ContractScript is Script {
         );
 
         // confirm state was updated
-        require(
-            relayer.relayerFee(wormhole.chainId(), sourceToken) == sourceRelayerFee,
-            "source relayer fee incorrect"
-        );
         require(
             relayer.relayerFee(targetChainId, sourceToken) == targetRelayerFee,
             "target relayer fee incorrect"
@@ -103,7 +91,6 @@ contract ContractScript is Script {
         // CircleRelayer initial contract state setup
         setInitialRelayerFee(
             usdc,
-            vm.envUint("SOURCE_USDC_RELAYER_FEE"),
             uint16(vm.envUint("TARGET_CHAIN_ID")),
             vm.envUint("TARGET_USDC_RELAYER_FEE")
         );
