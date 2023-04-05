@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "outDir": "lib",
+    "outDir": "build",
     "target": "esnext",
     "module": "commonjs",
     "moduleResolution": "node",
@@ -15,6 +15,6 @@
     "downlevelIteration": true,
     "sourceMap": true
   },
-  "include": ["src"],
+  "include": ["relayer"],
   "exclude": ["node_modules", "**/__tests__/*"]
 }

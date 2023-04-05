@@ -1,0 +1,23 @@
+{
+  "name": "src",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "keywords": [],
+  "author": "",
+  "dependencies": {
+    "@certusone/wormhole-sdk": "^0.9.11",
+    "ethers": "^5.7.2",
+    "winston": "^3.8.2",
+    "wormhole-relayer": "github:gabzim/wormhole-relayer#f78a27a2524de56c24d9e1cebf931e7871eb91ce"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "prettier": "^2.8.6"
+  }
+}
