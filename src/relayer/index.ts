@@ -18,9 +18,13 @@ import {
 import { ethers } from "ethers";
 import { Environment } from "wormhole-relayer/lib";
 import { getCircleAttestation } from "./circle.service";
+import { rootLogger } from "./logging";
+import { Logger } from "winston";
+import Koa, { Context, Next } from "koa";
+import * as Router from "koa-router";
 
 async function main() {
-  const env = config.env;
+  const env = config.blockchainEnv;
 
   const circleAddresses = CIRCLE_EMITTER_ADDRESSES[env];
   const usdcRelayerAddresses = USDC_RELAYER_ADDRESSES[env];
@@ -29,7 +33,12 @@ async function main() {
   const app = new StandardRelayerApp(env, {
     name: "cctp-relayer",
     fetchSourceTxhash: true,
-    redis: {},
+    redis: config.redis,
+    redisClusterEndpoints: config.redisClusterEndpoints,
+    redisCluster: config.redisClusterOptions,
+    spyEndpoint: config.spy,
+    concurrency: 3,
+    privateKeys: config.privateKeys,
   });
 
   app.multiple(usdcWhSenderAddresses, async (ctx, next) => {
@@ -135,6 +144,57 @@ async function main() {
   });
 
   app.listen();
+
+  runAPI(app, config.api.port, rootLogger);
+}
+
+function runAPI(
+  relayer: StandardRelayerApp<any>,
+  port: number,
+  rootLogger: Logger
+) {
+  const app = new Koa();
+  const router = new Router();
+
+  router.get(`/metrics`, async (ctx, next) => {
+    ctx.body = await relayer.metricsRegistry?.metrics();
+  });
+
+  router.post(
+    `/vaas/:emitterChain/:emitterAddress/:sequence`,
+    reprocessVaaById(relayer)
+  );
+
+  app.use(relayer.storageKoaUI("/ui"));
+
+  app.use(router.routes());
+  app.use(router.allowedMethods());
+
+  port = Number(port) || 3000;
+  app.listen(port, () => {
+    rootLogger.info(`Running on ${port}...`);
+    rootLogger.info(`For the UI, open http://localhost:${port}/ui`);
+    rootLogger.info("Make sure Redis is running on port 6379 by default");
+  });
+}
+
+function reprocessVaaById(relayer: StandardRelayerApp) {
+  return async (ctx: Context, next: Next) => {
+    const { emitterChain, emitterAddress, sequence } = ctx.params;
+    const logger = rootLogger.child({
+      emitterChain,
+      emitterAddress,
+      sequence,
+    });
+    logger.info("fetching vaa requested by API");
+    let vaa = await relayer.fetchVaa(emitterChain, emitterAddress, sequence);
+    if (!vaa) {
+      logger.error("fetching vaa requested by API");
+      return;
+    }
+    relayer.processVaa(Buffer.from(vaa.bytes));
+    ctx.body = "Processing";
+  };
 }
 
 async function handleCircleMessageInLogs(

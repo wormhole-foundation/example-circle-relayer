@@ -14,7 +14,12 @@
     "@certusone/wormhole-sdk": "^0.9.11",
     "ethers": "^5.7.2",
     "winston": "^3.8.2",
-    "wormhole-relayer": "github:gabzim/wormhole-relayer#f78a27a2524de56c24d9e1cebf931e7871eb91ce"
+    "wormhole-relayer": "github:gabzim/wormhole-relayer#f78a27a2524de56c24d9e1cebf931e7871eb91ce",
+    "ioredis": "^5.3.1",
+    "koa": "^2.14.1",
+    "koa-router": "^12.0.0",
+    "node-redis": "^0.1.7",
+    "typescript": "^4.9.5"
   },
   "license": "ISC",
   "devDependencies": {
