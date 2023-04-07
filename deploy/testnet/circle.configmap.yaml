@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: circle-relayer-env
+  namespace: circle-relayer
+data:
+  NODE_ENV: staging
+  BLOCKCHAIN_ENV: testnet
+  SPY_URL: spy.generic-relayer.svc.cluster.local:7073
+  RELAY_CONCURRENCY: "5"

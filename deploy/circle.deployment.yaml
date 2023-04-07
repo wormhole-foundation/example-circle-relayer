@@ -1,0 +1,46 @@
+# kubetpl:syntax:$
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: circle-relayer
+  namespace: circle-relayer
+  labels:
+    app: circle-relayer
+spec:
+  selector:
+    matchLabels:
+      app: circle-relayer
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: circle-relayer
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: relayer
+          image: $IMAGE:$TAG
+          imagePullPolicy: Always
+          # uncomment to explore filesystem during crash loop
+          #        command: [ "/bin/sh", "-c", "--" ]
+          #        args: [ "while true; do sleep 30; done;" ]
+          resources:
+            requests:
+              memory: 600Mi
+            limits:
+              cpu: 1000m
+              memory: 2000Mi
+          envFrom:
+            - configMapRef:
+                name: circle-relayer-env
+                optional: false
+            - secretRef:
+                name: circle-relayer-redis
+                optional: false
+            - secretRef:
+                name: circle-relayer-key
+                optional: false
+            - secretRef:
+                name: circle-relayer-influx
+                optional: true

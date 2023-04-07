@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: circle-relayer-env
+  namespace: circle-relayer
+data:
+  NODE_ENV: production
+  BLOCKCHAIN_ENV: mainnet
+  SPY_URL: spy:7073
+  RELAY_CONCURRENCY: "5"
