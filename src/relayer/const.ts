@@ -17,8 +17,6 @@ export const CIRCLE_EMITTER_ADDRESSES: AddressesByEnvAndChain = {
   [Environment.DEVNET]: {},
 };
 
-//TODO Ask Drew why 2 sets of contracts
-
 // USDC relayer contracts. We push the tx to these guys.
 export const USDC_RELAYER_ADDRESSES: AddressesByEnvAndChain = {
   [Environment.TESTNET]: {

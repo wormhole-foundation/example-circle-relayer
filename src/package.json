@@ -11,6 +11,7 @@
   "keywords": [],
   "author": "",
   "dependencies": {
+    "@influxdata/influxdb-client": "^1.33.2",
     "@certusone/wormhole-sdk": "^0.9.11",
     "ethers": "^5.7.2",
     "winston": "^3.8.2",
@@ -23,6 +24,8 @@
   },
   "license": "ISC",
   "devDependencies": {
+    "@types/koa-router": "^7.4.4",
+    "@types/koa": "^2.13.6",
     "prettier": "^2.8.6"
   }
 }

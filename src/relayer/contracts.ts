@@ -5,7 +5,7 @@ import { tryUint8ArrayToNative } from "@certusone/wormhole-sdk";
 
 export function relayerContract(
   address: string,
-  signer: ethers.Signer
+  signer: ethers.Signer | ethers.providers.Provider
 ): ethers.Contract {
   const contract = new Contract(
     address,
@@ -21,7 +21,7 @@ export function relayerContract(
 
 export function integrationContract(
   address: string,
-  signer: ethers.Signer
+  signer: ethers.providers.Provider
 ): ethers.Contract {
   const contract = new Contract(
     address,
@@ -50,12 +50,13 @@ export function parseVaaPayload(
   const toDomain = payloadArray.readUInt32BE(69);
 
   if (!(fromDomain in CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN)) {
-    logger.warn(`Unknown fromDomain: ${fromDomain}. skipping...`);
+    logger.warn(`Unknown fromDomain: ${fromDomain}.`);
+    throw new Error("Invalid circle source domain");
   }
 
   if (!(toDomain in CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN)) {
     logger.warn(`Unknown toDomain: ${toDomain}. Skipping...`);
-    throw new Error("Invalid Circle Domain");
+    throw new Error("Invalid circle target domain");
   }
 
   const nativeSourceTokenAddress = payloadArray.subarray(1, 33);

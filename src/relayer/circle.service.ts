@@ -12,8 +12,10 @@ export async function getCircleAttestation(
     // get the post
     try {
       const res = await fetch(`${circleAttestationUrl[env]}/${messageHash}`);
-      if (res !== null && res.status === 200) {
-        throw new Error(`Got unsuccessful response: ${res.status}`);
+      if (res !== null && res.status !== 200) {
+        throw new Error(
+          `Got unsuccessful response from circle attestation: ${res.status}`
+        );
       }
       const body = await res.json();
       if (body.status !== "complete") {
@@ -27,4 +29,36 @@ export async function getCircleAttestation(
 
     await sleep(timeout);
   }
+}
+
+export async function handleCircleMessageInLogs(
+  env: Environment,
+  logs: ethers.providers.Log[],
+  circleEmitterAddress: string
+) {
+  const circleMessage = findCircleMessageInLogs(logs, circleEmitterAddress);
+  if (circleMessage === null) {
+    return { circleMessage: null, signature: null };
+  }
+
+  const circleMessageHash = ethers.utils.keccak256(circleMessage);
+  const signature = await getCircleAttestation(env, circleMessageHash);
+
+  return { circleMessage, signature };
+}
+
+export function findCircleMessageInLogs(
+  logs: ethers.providers.Log[],
+  circleEmitterAddress: string
+): string | null {
+  for (const log of logs) {
+    if (log.address.toLowerCase() === circleEmitterAddress.toLowerCase()) {
+      const messageSentIface = new ethers.utils.Interface([
+        "event MessageSent(bytes message)",
+      ]);
+      return messageSentIface.parseLog(log).args.message as string;
+    }
+  }
+
+  return null;
 }
