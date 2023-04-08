@@ -1,12 +1,21 @@
 {
   "name": "src",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "watch": "tsc -w"
+    "watch": "tsc -w",
+    "docker:build-staging": "docker build --platform=linux/amd64 -t $AWS_ACCOUNT_STAGING.dkr.ecr.us-east-2.amazonaws.com/circle-relayer:$(npm run version --silent) .",
+    "docker:push-staging": "npm run docker:login-staging && docker push $AWS_ACCOUNT_STAGING.dkr.ecr.us-east-2.amazonaws.com/circle-relayer:$(npm run version --silent)",
+    "docker:build-push-staging": "npm run docker:build-staging && npm run docker:push-staging",
+    "docker:build": "docker build --platform=linux/amd64 -t $AWS_ACCOUNT_PRODUCTION.dkr.ecr.us-east-2.amazonaws.com/circle-relayer:$(npm run version --silent) .",
+    "docker:push": "npm run docker:login && docker push $AWS_ACCOUNT_PRODUCTION.dkr.ecr.us-east-2.amazonaws.com/circle-relayer:$(npm run version --silent)",
+    "docker:build-push": "npm run docker:build && npm run docker:push",
+    "docker:login": "aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin $AWS_ACCOUNT_PRODUCTION.dkr.ecr.us-east-2.amazonaws.com",
+    "docker:login-staging": "aws ecr get-login-password --region us-east-2 --profile staging | docker login --username AWS --password-stdin $AWS_ACCOUNT_STAGING.dkr.ecr.us-east-2.amazonaws.com",
+    "version": "npm pkg get version --workspaces=false | tr -d \\\""
   },
   "keywords": [],
   "author": "",
@@ -15,7 +24,7 @@
     "@certusone/wormhole-sdk": "^0.9.11",
     "ethers": "^5.7.2",
     "winston": "^3.8.2",
-    "wormhole-relayer": "github:gabzim/wormhole-relayer#f78a27a2524de56c24d9e1cebf931e7871eb91ce",
+    "wormhole-relayer": "github:gabzim/wormhole-relayer#09257fe942a4b2187571eabd7760bc727bb0e642",
     "ioredis": "^5.3.1",
     "koa": "^2.14.1",
     "koa-router": "^12.0.0",

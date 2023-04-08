@@ -16,6 +16,6 @@
     "sourceMap": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["relayer"],
+  "include": ["relayer", "oracle"],
   "exclude": ["node_modules", "**/__tests__/*"]
 }

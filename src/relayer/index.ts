@@ -14,7 +14,7 @@ async function main() {
   const serv = new RelayerService(env);
 
   const app = new StandardRelayerApp(env, {
-    name: "cctp-relayer",
+    name: "CCTPRelayer",
     fetchSourceTxhash: true,
     redis: config.redis,
     redisClusterEndpoints: config.redisClusterEndpoints,

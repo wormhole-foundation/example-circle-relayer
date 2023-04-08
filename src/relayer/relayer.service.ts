@@ -88,31 +88,7 @@ export class RelayerService {
 
     await job.updateProgress(25);
 
-    // 2. extract from tx the circle log and from the circle attestation service the signature for that log
-    const receipt = await ctx.providers.evm[
-      fromChain
-    ]![0].getTransactionReceipt(ctx.sourceTxHash);
-
-    logger.debug("Fetching Circle attestation");
-
-    const { circleMessage, signature } = await handleCircleMessageInLogs(
-      this.env,
-      receipt.logs,
-      this.circleAddresses[fromChain]!
-    );
-    if (circleMessage === null || signature === null) {
-      throw new Error(`Error parsing receipt, txhash: ${ctx.sourceTxHash}`);
-    }
-    await job.updateProgress(50);
-
-    // redeem parameters for target function call
-    const redeemParameters = [
-      `0x${uint8ArrayToHex(vaaBytes)}`,
-      circleMessage,
-      signature,
-    ];
-
-    // 3. Find the address of the encoded token on the target chain. The address
+    // 2. Find the address of the encoded token on the target chain. The address
     // that is encoded in the payload is the address on the source chain.
     logger.debug("Fetching token address from target chain.");
     const targetTokenAddress = await integrationContract(
@@ -120,14 +96,14 @@ export class RelayerService {
       ctx.providers.evm[toChain]![0]
     ).fetchLocalTokenAddress(fromDomain, nativeSourceTokenAddress);
 
-    await job.updateProgress(60);
+    await job.updateProgress(50);
 
     const contract = relayerContract(
       this.usdcRelayerAddresses[toChain]!,
       ctx.providers.evm[toChain]![0]
     );
 
-    // 4. query for native amount to swap with contract
+    // 3. query for native amount to swap with contract
     const nativeSwapQuote = await contract.calculateNativeSwapAmountOut(
       tryUint8ArrayToNative(ethers.utils.arrayify(targetTokenAddress), toChain),
       toNativeAmount
@@ -138,11 +114,37 @@ export class RelayerService {
       )}`
     );
 
-    await job.updateProgress(70);
+    await job.updateProgress(60);
 
     const targetRelayerAddress = this.usdcRelayerAddresses[toChain]!;
+
+    // 4. extract from tx the circle log and from the circle attestation service the signature for that log
+    const receipt = await ctx.providers.evm[
+      fromChain
+    ]![0].getTransactionReceipt(ctx.sourceTxHash);
+
+    logger.debug("Fetching Circle attestation");
+    const { circleMessage, signature } = await handleCircleMessageInLogs(
+      this.env,
+      receipt.logs,
+      this.circleAddresses[fromChain]!,
+      fromChain,
+      logger
+    );
+    if (circleMessage === null || signature === null) {
+      throw new Error(`Error parsing receipt, txhash: ${ctx.sourceTxHash}`);
+    }
+
+    job.updateProgress(70);
     await ctx.wallets.onEVM(toChain, async (walletToolBox) => {
       try {
+        // redeem parameters for target function call
+        const redeemParameters = [
+          `0x${uint8ArrayToHex(vaaBytes)}`,
+          circleMessage,
+          signature,
+        ];
+
         const receipt = await this.submitTx(
           ctx,
           targetRelayerAddress,
@@ -192,7 +194,7 @@ export class RelayerService {
       }
     );
 
-    await job.updateProgress(90);
+    job.updateProgress(90);
     const redeedReceipt: ethers.ContractReceipt = await tx.wait();
 
     logger.info(
