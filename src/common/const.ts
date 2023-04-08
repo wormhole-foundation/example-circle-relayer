@@ -5,9 +5,11 @@ import { Environment } from "wormhole-relayer";
 export const SUPPORTED_CHAINS = [CHAIN_ID_ETH, CHAIN_ID_AVAX];
 export type SupportedChainId = typeof SUPPORTED_CHAINS[number];
 
-type AddressesByEnvAndChain = {
-  [e: string]: Partial<{ [k in SupportedChainId]: string }>;
+export type Addresses = Partial<{ [k in SupportedChainId]: string }>;
+export type AddressesByEnvAndChain = {
+  [e: string]: Addresses;
 };
+
 export const CIRCLE_EMITTER_ADDRESSES: AddressesByEnvAndChain = {
   [Environment.TESTNET]: {
     [CHAIN_ID_ETH]: "0x26413e8157cd32011e726065a5462e97dd4d03d9",

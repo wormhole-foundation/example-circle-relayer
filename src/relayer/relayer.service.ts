@@ -6,13 +6,14 @@ import {
   integrationContract,
   parseVaaPayload,
   relayerContract,
-} from "./contracts";
+} from "../common/contracts";
 import {
+  Addresses,
   CIRCLE_EMITTER_ADDRESSES,
   SupportedChainId,
   USDC_RELAYER_ADDRESSES,
   USDC_WH_SENDER,
-} from "./const";
+} from "../common/const";
 import {
   coalesceChainName,
   tryUint8ArrayToNative,
@@ -21,12 +22,10 @@ import {
 import { RelayPoint } from "./relay-point.metrics";
 import { handleCircleMessageInLogs } from "./circle.service";
 
-type Addresses = Partial<{ [k in SupportedChainId]: string }>;
-
 export class RelayerService {
-  private circleAddresses: Addresses;
-  private usdcRelayerAddresses: Addresses;
-  private usdcWhSenderAddresses: Addresses;
+  private readonly circleAddresses: Addresses;
+  private readonly usdcRelayerAddresses: Addresses;
+  private readonly usdcWhSenderAddresses: Addresses;
 
   constructor(public env: Environment, private writeApi?: WriteApi) {
     this.circleAddresses = CIRCLE_EMITTER_ADDRESSES[env];

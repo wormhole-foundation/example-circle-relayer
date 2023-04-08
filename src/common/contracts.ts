@@ -1,6 +1,9 @@
 import { Contract, ethers } from "ethers";
 import { Logger } from "winston";
-import { CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN, SupportedChainId } from "./const";
+import {
+  CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN,
+  SupportedChainId,
+} from "../common/const";
 import { tryUint8ArrayToNative } from "@certusone/wormhole-sdk";
 
 export function relayerContract(
@@ -12,6 +15,9 @@ export function relayerContract(
     [
       "function redeemTokens((bytes,bytes,bytes)) payable",
       "function calculateNativeSwapAmountOut(address,uint256) view returns (uint256)",
+      "function nativeSwapRate(address) public view returns (uint256)",
+      "function updateNativeSwapRate(uint16,address,uint256) public",
+      "function nativeSwapRatePrecision() public view returns (uint256)",
     ],
     signer
   );

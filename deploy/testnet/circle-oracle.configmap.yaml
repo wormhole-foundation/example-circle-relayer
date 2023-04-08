@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: circle-oracle-env
+  namespace: circle-relayer
+data:
+  NODE_ENV: staging
+  BLOCKCHAIN_ENV: testnet
+  LOG_LEVEL: debug
+  FETCH_PRICE_INTERVAL_IN_MS: "60000"
+  UPDATE_PRICE_CHANGE_PCT: "2"
+  UPDATE_PRICE_CHANGE_PCT_CAP: "25"

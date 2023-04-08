@@ -1,7 +1,7 @@
 import { StandardRelayerApp } from "wormhole-relayer";
 import { config } from "./config";
-import { USDC_WH_SENDER } from "./const";
-import { rootLogger } from "./logging";
+import { USDC_WH_SENDER } from "../common/const";
+import { getLogger } from "../common/logging";
 import { Logger } from "winston";
 import Koa, { Context, Next } from "koa";
 import * as Router from "koa-router";
@@ -13,6 +13,7 @@ async function main() {
   const usdcWhSenderAddresses = USDC_WH_SENDER[env];
   const serv = new RelayerService(env);
 
+  const logger = getLogger(config.env, config.logLevel);
   const app = new StandardRelayerApp(env, {
     name: "CCTPRelayer",
     fetchSourceTxhash: true,
@@ -22,14 +23,14 @@ async function main() {
     spyEndpoint: config.spy,
     concurrency: 3,
     privateKeys: config.privateKeys,
-    logger: rootLogger,
+    logger,
   });
 
   app.multiple(usdcWhSenderAddresses, serv.handleVaa);
 
   app.listen();
 
-  runAPI(app, config.api.port, rootLogger);
+  runAPI(app, config.api.port, logger);
 }
 
 function runAPI(
@@ -46,7 +47,7 @@ function runAPI(
 
   router.post(
     `/vaas/:emitterChain/:emitterAddress/:sequence`,
-    reprocessVaaById(relayer)
+    reprocessVaaById(rootLogger, relayer)
   );
 
   app.use(relayer.storageKoaUI("/ui"));
@@ -62,7 +63,7 @@ function runAPI(
   });
 }
 
-function reprocessVaaById(relayer: StandardRelayerApp) {
+function reprocessVaaById(rootLogger: Logger, relayer: StandardRelayerApp) {
   return async (ctx: Context, next: Next) => {
     const { emitterChain, emitterAddress, sequence } = ctx.params;
     const logger = rootLogger.child({
