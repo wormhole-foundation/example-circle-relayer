@@ -6,6 +6,8 @@ if [ $? -eq 0 ]; then
     exit 1;
 fi
 
+echo "Starting anvil"
+
 # ethereum goerli testnet
 anvil \
     -m "myth like bonus scare over problem client lizard pioneer submit female collect" \
@@ -17,6 +19,8 @@ anvil \
     -m "myth like bonus scare over problem client lizard pioneer submit female collect" \
     --port 8547 \
     --fork-url $AVAX_FORK_RPC > anvil_avax.log &
+
+pgrep anvil
 
 sleep 2
 

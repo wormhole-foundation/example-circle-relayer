@@ -15,10 +15,6 @@ contract CircleRelayerGetters is CircleRelayerSetters {
         return _state.pendingOwner;
     }
 
-    function isInitialized(address impl) public view returns (bool) {
-        return _state.initializedImplementations[impl];
-    }
-
     function wormhole() public view returns (IWormhole) {
         return IWormhole(_state.wormhole);
     }

@@ -8,34 +8,8 @@ import "./CircleRelayerGetters.sol";
 import "./CircleRelayerState.sol";
 
 contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
-    event ContractUpgraded(address indexed oldContract, address indexed newContract);
     event OwnershipTransfered(address indexed oldOwner, address indexed newOwner);
     event SwapRateUpdated(address indexed token, uint256 indexed swapRate);
-
-    /**
-     * @notice Upgrades contract the implementation (logic contract)
-     * @param chainId_ Wormhole chain ID
-     * @param newImplementation Address of the new implementation (logic) contract
-     */
-    function upgrade(
-        uint16 chainId_,
-        address newImplementation
-    ) public onlyOwner onlyCurrentChain(chainId_) {
-        require(newImplementation != address(0), "invalid implementation");
-
-        address currentImplementation = _getImplementation();
-
-        _upgradeTo(newImplementation);
-
-        // call initialize function of the new implementation
-        (bool success, bytes memory reason) = newImplementation.delegatecall(
-            abi.encodeWithSignature("initialize()")
-        );
-
-        require(success, string(reason));
-
-        emit ContractUpgraded(currentImplementation, newImplementation);
-    }
 
     /**
      * @notice Starts the ownership transfer process of the contracts. It saves

@@ -60,6 +60,7 @@ describe("Environment Test", () => {
       expect(wormhole.address).to.equal(ETH_WORMHOLE_ADDRESS);
 
       it("EVM Chain ID", async () => {
+        await provider.ready;
         const network = await provider.getNetwork();
         expect(network.chainId).to.equal(ETH_FORK_CHAIN_ID);
       });

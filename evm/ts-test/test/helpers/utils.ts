@@ -7,13 +7,13 @@ export function getTimeNow() {
   return Math.floor(Date.now() / 1000);
 }
 
-export function readCircleRelayerProxyAddress(chain: number): string {
+export function readCircleRelayerAddress(chain: number): string {
   return JSON.parse(
     fs.readFileSync(
       `${__dirname}/../../../broadcast-test/deploy_contracts.sol/${chain}/run-latest.json`,
       "utf-8"
     )
-  ).transactions[2].contractAddress;
+  ).transactions[0].contractAddress;
 }
 
 export function findWormholeMessageInLogs(

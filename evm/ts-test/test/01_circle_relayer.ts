@@ -32,7 +32,7 @@ import {RedeemParameters} from "../src";
 import {findCircleMessageInLogs} from "../src/logs";
 import {
   MockCircleAttester,
-  readCircleRelayerProxyAddress,
+  readCircleRelayerAddress,
   findWormholeMessageInLogs,
   findRedeemEventInLogs,
 } from "./helpers/utils";
@@ -46,7 +46,7 @@ describe("Circle Integration Test", () => {
     ethProvider
   );
   const ethCircleRelayer = ICircleRelayer__factory.connect(
-    readCircleRelayerProxyAddress(ETH_FORK_CHAIN_ID),
+    readCircleRelayerAddress(ETH_FORK_CHAIN_ID),
     ethWallet
   );
   const ethCircleIntegration = ICircleIntegration__factory.connect(
@@ -65,7 +65,7 @@ describe("Circle Integration Test", () => {
     avaxProvider
   );
   const avaxCircleRelayer = ICircleRelayer__factory.connect(
-    readCircleRelayerProxyAddress(AVAX_FORK_CHAIN_ID),
+    readCircleRelayerAddress(AVAX_FORK_CHAIN_ID),
     avaxWallet
   );
   const avaxCircleIntegration = ICircleIntegration__factory.connect(

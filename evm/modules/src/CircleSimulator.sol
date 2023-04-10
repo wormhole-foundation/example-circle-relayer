@@ -72,7 +72,7 @@ contract CircleSimulator {
     /// @notice Attests Circle messages
     function attestCircleMessage(
         bytes memory circleMessage
-    ) public returns (bytes memory) {
+    ) public view returns (bytes memory) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(
             signerPK,
             keccak256(circleMessage)
