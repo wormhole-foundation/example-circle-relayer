@@ -19,6 +19,27 @@ import "./CircleRelayerMessages.sol";
 contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, ReentrancyGuard {
     using BytesLib for bytes;
 
+    constructor(
+        address circleIntegration_,
+        uint8 nativeTokenDecimals_
+    ) public {
+        require(circleIntegration_ != address(0), "invalid circle integration address");
+        require(nativeTokenDecimals_ > 0, "invalid native decimals");
+
+        // configure state
+        setOwner(msg.sender);
+        setCircleIntegration(circleIntegration_);
+        setNativeTokenDecimals(nativeTokenDecimals_);
+
+        // set wormhole and chainId by querying the integration contract state
+        ICircleIntegration integration = circleIntegration();
+        setChainId(integration.chainId());
+        setWormhole(address(integration.wormhole()));
+
+        // set initial swap rate precision to 1e8
+        setNativeSwapRatePrecision(1e8);
+    }
+
     /**
      * @notice Calls Wormhole's Circle Integration contract to burn user specified tokens.
      * It emits a Wormhole message with instructions for how to handle relayer payments
@@ -150,28 +171,26 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         if (transferMessage.toNativeTokenAmount > 0) {
             /**
              * Compute the maximum amount of tokens that the user is allowed
-             * to swap for native assets.
-             *
-             * Override the toNativeTokenAmount in the transferMessage if
-             * the toNativeTokenAmount is greater than the maxToNativeAllowed.
-             *
-             * Compute the amount of native assets to send the recipient.
+             * to swap for native assets. Override the toNativeTokenAmount in
+             * the transferMessage if the toNativeTokenAmount is greater than
+             * the maxToNativeAllowed.
              */
-            uint256 nativeAmountForRecipient;
             uint256 maxToNativeAllowed = calculateMaxSwapAmountIn(token);
             if (transferMessage.toNativeTokenAmount > maxToNativeAllowed) {
                 transferMessage.toNativeTokenAmount = maxToNativeAllowed;
             }
+
             // compute amount of native asset to pay the recipient
-            nativeAmountForRecipient = calculateNativeSwapAmountOut(
+            uint256 nativeAmountForRecipient = calculateNativeSwapAmountOut(
                 token,
                 transferMessage.toNativeTokenAmount
             );
 
             /**
-             * The nativeAmountForRecipient can be zero if the user specifed a toNativeTokenAmount
-             * that is too little to convert to native asset. We need to override the toNativeTokenAmount
-             * to be zero if that is the case, that way the user receives the full amount of minted USDC.
+             * The nativeAmountForRecipient can be zero if the user specifed a
+             * toNativeTokenAmount that is too little to convert to native asset.
+             * We need to override the toNativeTokenAmount to be zero if that is
+             * the case, that way the user receives the full amount of minted USDC.
              */
             if (nativeAmountForRecipient > 0) {
                 // check to see if the relayer sent enough value
@@ -257,8 +276,8 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
      * @dev The swap rate is governed by the `nativeSwapRate` state variable.
      * @param token Address of token being transferred.
      * @param toNativeAmount Quantity of tokens to be converted to native assets.
-     * @return nativeAmount The exchange rate between native assets and the `toNativeAmount`
-     * of transferred tokens.
+     * @return nativeAmount The exchange rate between native assets and the
+     * `toNativeAmount` of transferred tokens.
      */
     function calculateNativeSwapAmountOut(
         address token,

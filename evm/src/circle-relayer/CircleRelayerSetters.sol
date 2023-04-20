@@ -12,10 +12,6 @@ contract CircleRelayerSetters is CircleRelayerState {
         _state.pendingOwner = pendingOwner_;
     }
 
-    function setInitialized(address implementatiom) internal {
-        _state.initializedImplementations[implementatiom] = true;
-    }
-
     function setWormhole(address wormhole_) internal {
         _state.wormhole = payable(wormhole_);
     }

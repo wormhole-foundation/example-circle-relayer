@@ -15,10 +15,8 @@ import {IWormhole} from "../src/interfaces/IWormhole.sol";
 import {IUSDC} from "../src/interfaces/IUSDC.sol";
 import {ICircleRelayer} from "../src/interfaces/ICircleRelayer.sol";
 
+import {CircleRelayer} from "../src/circle-relayer/CircleRelayer.sol";
 import {CircleRelayerStructs} from "../src/circle-relayer/CircleRelayerStructs.sol";
-import {CircleRelayerSetup} from "../src/circle-relayer/CircleRelayerSetup.sol";
-import {CircleRelayerImplementation} from "../src/circle-relayer/CircleRelayerImplementation.sol";
-import {CircleRelayerProxy} from "../src/circle-relayer/CircleRelayerProxy.sol";
 
 /**
  * @title A Test Suite for the Circle-Relayer Governance Module
@@ -81,31 +79,14 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
 
     /// @notice Deploys CircleRelayer proxy contract and sets the initial state
     function setupCircleRelayer() public {
-        // deploy Setup
-        CircleRelayerSetup setup = new CircleRelayerSetup();
-
-        // deploy Implementation
-        CircleRelayerImplementation implementation =
-            new CircleRelayerImplementation();
-
-        // deploy Proxy
-        CircleRelayerProxy proxy = new CircleRelayerProxy(
-            address(setup),
-            abi.encodeWithSelector(
-                bytes4(
-                    keccak256("setup(address,uint16,address,address,uint8)")
-                ),
-                address(implementation),
-                uint16(wormhole.chainId()),
-                address(wormhole),
-                vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
-                uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS"))
-            )
+        // deploy
+        CircleRelayer deployedRelayer = new CircleRelayer(
+            vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
+            uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS"))
         );
-        relayer = ICircleRelayer(address(proxy));
+        relayer = ICircleRelayer(address(deployedRelayer));
 
         // verify initial state
-        assertEq(relayer.isInitialized(address(implementation)), true);
         assertEq(relayer.chainId(), wormhole.chainId());
         assertEq(address(relayer.wormhole()), address(wormhole));
         assertEq(
@@ -119,108 +100,6 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         setupUSDC();
         setupWormhole();
         setupCircleRelayer();
-    }
-
-    /**
-     * @notice This test confirms that the owner can correctly upgrade the
-     * contract implementation.
-     */
-    function testUpgrade() public {
-        // hashed slot of implementation
-        bytes32 implementationSlot =
-            0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
-
-        // grap current implementation
-        bytes32 implementationBefore = vm.load(
-            address(relayer),
-            implementationSlot
-        );
-
-         // deploy implementation and upgrade the contract
-        CircleRelayerImplementation implementation =
-            new CircleRelayerImplementation();
-
-        // upgrade the contract and fetch the new implementation slot
-        relayer.upgrade(relayer.chainId(), address(implementation));
-        bytes32 implementationAfter = vm.load(
-            address(relayer),
-            implementationSlot
-        );
-
-        // confrim state changes
-        assertEq(implementationAfter != implementationBefore, true);
-        assertEq(
-            implementationAfter == addressToBytes32(address(implementation)),
-            true
-        );
-
-        // confirm the new implementation is initialized
-        assertEq(relayer.isInitialized(address(implementation)), true);
-    }
-
-    /**
-     * @notice This test confirms that the owner cannot upgrade the
-     * contract implementation to the wrong chain.
-     */
-    function testUpgradeWrongChain() public {
-        uint16 wrongChainId_ = 69;
-
-        // deploy implementation and upgrade the contract
-        CircleRelayerImplementation implementation =
-            new CircleRelayerImplementation();
-
-        // expect the upgrade call to fail
-        vm.expectRevert("wrong chain");
-        relayer.upgrade(wrongChainId_, address(implementation));
-    }
-
-    /**
-     * @notice This test confirms that ONLY the owner can upgrade the contract.
-     */
-    function testUpgradeOnlyOwner() public {
-        // deploy implementation and upgrade the contract
-        CircleRelayerImplementation implementation =
-            new CircleRelayerImplementation();
-
-        // prank the caller address to something different than the owner's
-        vm.startPrank(address(wormholeSimulator));
-
-        // expect the upgrade call to fail
-        bytes memory encodedSignature = abi.encodeWithSignature(
-            "upgrade(uint16,address)",
-            relayer.chainId(),
-            address(implementation)
-        );
-        expectRevert(
-            address(relayer),
-            encodedSignature,
-            "caller not the owner"
-        );
-
-        vm.stopPrank();
-    }
-
-    /**
-     * @notice This test confirms that the owner cannot update the
-     * implementation to the zero address.
-     */
-    function testUpgradeOnlyInvalidImplementation() public {
-        // deploy implementation and upgrade the contract
-        address implementation = address(0);
-
-        // expect the upgrade call to fail
-        bytes memory encodedSignature = abi.encodeWithSignature(
-            "upgrade(uint16,address)",
-            relayer.chainId(),
-            implementation
-        );
-        expectRevert(
-            address(relayer),
-            encodedSignature,
-            "invalid implementation"
-        );
-
-        vm.stopPrank();
     }
 
     /**

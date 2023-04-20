@@ -78,18 +78,6 @@ Then perform the initial contract setup by executing the following commands:
 . env/avax-fuji-testnet.env && PRIVATE_KEY=put_your_private_key_here bash shell-scripts/setup_circle_relayer.sh
 ```
 
-## Contract Upgrades
-
-Set the `SOURCE_RELAYER_CONTRACT_ADDRESS` in the environment file to the deployed proxy contract address. Run `make build` to compile the new implementation and execute the relevant command below:
-
-```
-# goerli
-. env/eth-goerli-testnet.env && PRIVATE_KEY=put_your_private_key_here bash shell-scripts/upgrade_circle_relayer.sh
-
-# fuji
-. env/avax-fuji-testnet.env && PRIVATE_KEY=put_your_private_key_here bash shell-scripts/upgrade_circle_relayer.sh
-```
-
 ## Off-Chain Circle Relayer
 
 Copy the sample `.env` file in the `relayer` directory and set the values:
