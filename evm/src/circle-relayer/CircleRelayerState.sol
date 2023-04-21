@@ -41,17 +41,11 @@ contract CircleRelayerStorage {
          */
         mapping(address => uint256) maxNativeSwapAmount;
 
-        // mapping of initialized implementations
-        mapping(address => bool) initializedImplementations;
-
         // Wormhole chain ID to registered contract address mapping
         mapping(uint16 => bytes32) registeredContracts;
 
         // verified message hash to boolean
         mapping(bytes32 => bool) consumedMessages;
-
-        // storage gap
-        uint256[50] ______gap;
     }
 }
 

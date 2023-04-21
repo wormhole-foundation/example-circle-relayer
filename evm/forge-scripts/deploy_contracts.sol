@@ -9,18 +9,11 @@ import {IWormhole} from "../src/interfaces/IWormhole.sol";
 import {ICircleIntegration} from "../src/interfaces/ICircleIntegration.sol";
 import {ICircleRelayer} from "../src/interfaces/ICircleRelayer.sol";
 
-import {CircleRelayerSetup} from "../src/circle-relayer/CircleRelayerSetup.sol";
-import {CircleRelayerImplementation} from "../src/circle-relayer/CircleRelayerImplementation.sol";
-import {CircleRelayerProxy} from "../src/circle-relayer/CircleRelayerProxy.sol";
+import {CircleRelayer} from "../src/circle-relayer/CircleRelayer.sol";
 
 contract ContractScript is Script {
     IWormhole wormhole;
     ICircleIntegration circleIntegration;
-
-    // Circle Integration contracts
-    CircleRelayerSetup setup;
-    CircleRelayerImplementation implementation;
-    CircleRelayerProxy proxy;
 
     // Circle Relayer instance (post deployment)
     ICircleRelayer relayer;
@@ -31,26 +24,22 @@ contract ContractScript is Script {
     }
 
     function deployCircleRelayer() public {
-        // first Setup
-        setup = new CircleRelayerSetup();
-
-        // next Implementation
-        implementation = new CircleRelayerImplementation();
-
-        // setup Proxy using Implementation
-        proxy = new CircleRelayerProxy(
-            address(setup),
-            abi.encodeWithSelector(
-                bytes4(keccak256("setup(address,uint16,address,address,uint8)")),
-                address(implementation),
-                wormhole.chainId(),
-                address(wormhole),
-                address(circleIntegration),
-                uint8(vm.envUint("RELEASE_NATIVE_TOKEN_DECIMALS"))
-            )
+        // deploy
+        CircleRelayer deployedRelayer = new CircleRelayer(
+            address(circleIntegration),
+            uint8(vm.envUint("RELEASE_NATIVE_TOKEN_DECIMALS"))
         );
+        relayer = ICircleRelayer(address(deployedRelayer));
 
-        relayer = ICircleRelayer(address(proxy));
+        // verify getters
+        require(relayer.chainId() == wormhole.chainId());
+        require(address(relayer.wormhole()) == address(wormhole));
+        require(
+            address(relayer.circleIntegration()) ==
+            address(circleIntegration)
+        );
+        require(relayer.nativeSwapRatePrecision() == 1e8);
+
     }
 
     function run() public {

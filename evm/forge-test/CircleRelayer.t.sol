@@ -19,10 +19,8 @@ import {IMessageTransmitter} from "../src/interfaces/IMessageTransmitter.sol";
 import {ICircleBridge} from "../src/interfaces/ICircleBridge.sol";
 import {ICircleIntegration} from "../src/interfaces/ICircleIntegration.sol";
 
+import {CircleRelayer} from "../src/circle-relayer/CircleRelayer.sol";
 import {CircleRelayerStructs} from "../src/circle-relayer/CircleRelayerStructs.sol";
-import {CircleRelayerSetup} from "../src/circle-relayer/CircleRelayerSetup.sol";
-import {CircleRelayerImplementation} from "../src/circle-relayer/CircleRelayerImplementation.sol";
-import {CircleRelayerProxy} from "../src/circle-relayer/CircleRelayerProxy.sol";
 
 interface IWETH is IERC20 {
     function deposit() external payable;
@@ -41,7 +39,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
 
     // target chain info
     uint16 targetChain;
-    bytes32 targetContract;
+    bytes32 targetContractAddress;
 
     // dependencies
     WormholeSimulator wormholeSimulator;
@@ -119,28 +117,12 @@ contract CircleRelayerTest is Test, ForgeHelpers {
 
     /// @notice Deploys CircleRelayer proxy contract and sets the initial state
     function setupCircleRelayer() public {
-        // deploy Setup
-        CircleRelayerSetup setup = new CircleRelayerSetup();
-
-        // deploy Implementation
-        CircleRelayerImplementation implementation =
-            new CircleRelayerImplementation();
-
-        // deploy Proxy
-        CircleRelayerProxy proxy = new CircleRelayerProxy(
-            address(setup),
-            abi.encodeWithSelector(
-                bytes4(
-                    keccak256("setup(address,uint16,address,address,uint8)")
-                ),
-                address(implementation),
-                uint16(wormhole.chainId()),
-                address(wormhole),
-                vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
-                uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS"))
-            )
+        // deploy
+        CircleRelayer deployedRelayer = new CircleRelayer(
+            vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
+            uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS"))
         );
-        relayer = ICircleRelayer(address(proxy));
+        relayer = ICircleRelayer(address(deployedRelayer));
 
         // set the native swap rate to 0.01 avax
         relayer.updateNativeSwapRate(
@@ -153,7 +135,6 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         relayer.updateMaxNativeSwapAmount(relayer.chainId(), address(usdc), 1e17);
 
         // verify initial state
-        assertEq(relayer.isInitialized(address(implementation)), true);
         assertEq(relayer.chainId(), wormhole.chainId());
         assertEq(address(relayer.wormhole()), address(wormhole));
         assertEq(
@@ -164,7 +145,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
 
         // set target chain parameters
         targetChain = 6; // avax
-        targetContract = addressToBytes32(address(this)); // random address
+        targetContractAddress = addressToBytes32(address(this)); // random address
     }
 
     function setUp() public {
@@ -248,7 +229,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
 
         // register the target contract
-        relayer.registerContract(targetChain, targetContract);
+        relayer.registerContract(targetChain, targetContractAddress);
 
         // set the initial relayer fee to 1 USDC
         relayer.updateRelayerFee(
@@ -358,7 +339,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         IWETH(token).deposit{value: amount}();
 
         // register the target contract
-        relayer.registerContract(targetChain, targetContract);
+        relayer.registerContract(targetChain, targetContractAddress);
 
         // mint usdc to address(this)
         circleSimulator.mintUSDC(amount);
@@ -428,7 +409,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
 
         // register the target contract
-        relayer.registerContract(targetChain, targetContract);
+        relayer.registerContract(targetChain, targetContractAddress);
 
         // set the initial relayer fee to 1 USDC
         uint256 targetRelayerFee = 1e6;
@@ -479,7 +460,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
 
         // register the target contract
-        relayer.registerContract(targetChain, targetContract);
+        relayer.registerContract(targetChain, targetContractAddress);
 
         // approve the circle relayer to spend tokens
         SafeERC20.safeApprove(
@@ -515,7 +496,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
 
         // register the target contract
-        relayer.registerContract(targetChain, targetContract);
+        relayer.registerContract(targetChain, targetContractAddress);
 
         // approve the circle relayer to spend tokens
         SafeERC20.safeApprove(
@@ -551,7 +532,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
 
         // register the target contract
-        relayer.registerContract(targetChain, targetContract);
+        relayer.registerContract(targetChain, targetContractAddress);
 
         // approve the circle relayer to spend tokens
         SafeERC20.safeApprove(
@@ -575,7 +556,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         uint16 emitterChainId,
         bytes32 emitterAddress,
         ICircleIntegration.DepositWithPayload memory deposit
-    ) internal returns (bytes memory signedTransfer) {
+    ) internal view returns (bytes memory signedTransfer) {
         // construct `DepositWithPayload` Wormhole message
         IWormhole.VM memory vm;
 
@@ -657,7 +638,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
                 sourceDomain: integration.getDomainFromChainId(targetChain),
                 targetDomain: integration.localDomain(),
                 nonce: type(uint64).max - counter,
-                fromAddress: targetContract,
+                fromAddress: targetContractAddress,
                 mintRecipient: addressToBytes32(address(relayer)),
                 payload: transferWithRelayPayload
             });
@@ -680,7 +661,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
 
         // register the target contract
-        relayer.registerContract(targetChain, targetContract);
+        relayer.registerContract(targetChain, targetContractAddress);
 
         // initiate Balances struct
         Balances memory tokenBalances;
@@ -758,7 +739,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
                 sourceDomain: integration.getDomainFromChainId(targetChain),
                 targetDomain: integration.localDomain(),
                 nonce: type(uint64).max - counter,
-                fromAddress: targetContract,
+                fromAddress: targetContractAddress,
                 mintRecipient: addressToBytes32(address(relayer)),
                 payload: transferWithRelayPayload
             });
@@ -781,7 +762,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
 
         // register the target contract
-        relayer.registerContract(targetChain, targetContract);
+        relayer.registerContract(targetChain, targetContractAddress);
 
         // initiate Balances struct
         Balances memory tokenBalances;
@@ -859,7 +840,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
                 sourceDomain: integration.getDomainFromChainId(targetChain),
                 targetDomain: integration.localDomain(),
                 nonce: type(uint64).max - counter,
-                fromAddress: targetContract,
+                fromAddress: targetContractAddress,
                 mintRecipient: addressToBytes32(address(relayer)),
                 payload: transferWithRelayPayload
             });
@@ -882,7 +863,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
 
         // register the target contract
-        relayer.registerContract(targetChain, targetContract);
+        relayer.registerContract(targetChain, targetContractAddress);
 
         // check token balance of the recipient and relayer
         Balances memory tokenBalances;
@@ -1010,7 +991,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
                 sourceDomain: integration.getDomainFromChainId(targetChain),
                 targetDomain: integration.localDomain(),
                 nonce: type(uint64).max - counter,
-                fromAddress: targetContract,
+                fromAddress: targetContractAddress,
                 mintRecipient: addressToBytes32(address(relayer)),
                 payload: transferWithRelayPayload
             });
@@ -1033,7 +1014,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
 
         // register the target contract
-        relayer.registerContract(targetChain, targetContract);
+        relayer.registerContract(targetChain, targetContractAddress);
 
         // check token/eth balance of the recipient
         Balances memory tokenBalances;
@@ -1109,7 +1090,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
                 sourceDomain: integration.getDomainFromChainId(targetChain),
                 targetDomain: integration.localDomain(),
                 nonce: type(uint64).max - counter,
-                fromAddress: targetContract,
+                fromAddress: targetContractAddress,
                 mintRecipient: addressToBytes32(address(relayer)),
                 payload: transferWithRelayPayload
             });
@@ -1185,7 +1166,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
                 sourceDomain: integration.getDomainFromChainId(targetChain),
                 targetDomain: integration.localDomain(),
                 nonce: type(uint64).max - counter,
-                fromAddress: targetContract,
+                fromAddress: targetContractAddress,
                 mintRecipient: addressToBytes32(address(relayer)),
                 payload: transferWithRelayPayload
             });
@@ -1208,7 +1189,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
 
         // register the target contract
-        relayer.registerContract(targetChain, targetContract);
+        relayer.registerContract(targetChain, targetContractAddress);
 
         // get a quote from the contract for the native gas swap
         uint256 nativeGasQuote = relayer.calculateNativeSwapAmountOut(
@@ -1275,7 +1256,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
                 sourceDomain: integration.getDomainFromChainId(targetChain),
                 targetDomain: integration.localDomain(),
                 nonce: type(uint64).max - counter,
-                fromAddress: targetContract,
+                fromAddress: targetContractAddress,
                 mintRecipient: addressToBytes32(address(relayer)),
                 payload: transferWithRelayPayload
             });
@@ -1298,7 +1279,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
 
         // register the target contract
-        relayer.registerContract(targetChain, targetContract);
+        relayer.registerContract(targetChain, targetContractAddress);
 
         // get a quote from the contract for the native gas swap
         uint256 nativeGasQuote = relayer.calculateNativeSwapAmountOut(

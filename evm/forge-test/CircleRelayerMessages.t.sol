@@ -14,10 +14,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IWormhole} from "../src/interfaces/IWormhole.sol";
 import {ICircleRelayer} from "../src/interfaces/ICircleRelayer.sol";
 
+import {CircleRelayer} from "../src/circle-relayer/CircleRelayer.sol";
 import {CircleRelayerStructs} from "../src/circle-relayer/CircleRelayerStructs.sol";
-import {CircleRelayerSetup} from "../src/circle-relayer/CircleRelayerSetup.sol";
-import {CircleRelayerImplementation} from "../src/circle-relayer/CircleRelayerImplementation.sol";
-import {CircleRelayerProxy} from "../src/circle-relayer/CircleRelayerProxy.sol";
 
 /**
  * @title A Test Suite for the Circle-Relayer Messages module
@@ -43,31 +41,14 @@ contract CircleRelayerMessagesTest is Test, ForgeHelpers {
 
     /// @notice Deploys CircleRelayer proxy contract and sets the initial state
     function setupCircleRelayer() public {
-        // deploy Setup
-        CircleRelayerSetup setup = new CircleRelayerSetup();
-
-        // deploy Implementation
-        CircleRelayerImplementation implementation =
-            new CircleRelayerImplementation();
-
-        // deploy Proxy
-        CircleRelayerProxy proxy = new CircleRelayerProxy(
-            address(setup),
-            abi.encodeWithSelector(
-                bytes4(
-                    keccak256("setup(address,uint16,address,address,uint8)")
-                ),
-                address(implementation),
-                uint16(wormhole.chainId()),
-                address(wormhole),
-                vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
-                uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS"))
-            )
+        // deploy
+        CircleRelayer deployedRelayer = new CircleRelayer(
+            vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
+            uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS"))
         );
-        relayer = ICircleRelayer(address(proxy));
+        relayer = ICircleRelayer(address(deployedRelayer));
 
         // verify initial state
-        assertEq(relayer.isInitialized(address(implementation)), true);
         assertEq(relayer.chainId(), wormhole.chainId());
         assertEq(address(relayer.wormhole()), address(wormhole));
         assertEq(
