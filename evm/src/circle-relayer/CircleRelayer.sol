@@ -19,6 +19,22 @@ import "./CircleRelayerMessages.sol";
 contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, ReentrancyGuard {
     using BytesLib for bytes;
 
+    /**
+     * @notice Emitted when a swap is executed with an off-chain relayer
+     * @param recipient Address of the recipient of the native assets
+     * @param relayer Address of the relayer that performed the swap
+     * @param token Address of the token being swapped
+     * @param tokenAmount Amount of token being swapped
+     * @param nativeAmount Amount of native assets swapped for tokens
+     */
+    event SwapExecuted(
+        address indexed recipient,
+        address indexed relayer,
+        address indexed token,
+        uint256 tokenAmount,
+        uint256 nativeAmount
+    );
+
     constructor(
         address circleIntegration_,
         uint8 nativeTokenDecimals_
@@ -207,6 +223,15 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
 
                 // send requested native asset to target recipient
                 payable(recipient).transfer(nativeAmountForRecipient);
+
+                // emit swap event
+                emit SwapExecuted(
+                    recipient,
+                    msg.sender,
+                    address(token),
+                    transferMessage.toNativeTokenAmount,
+                    nativeAmountForRecipient
+                );
             } else {
                 // override the toNativeTokenAmount in the transferMessage
                 transferMessage.toNativeTokenAmount = 0;
