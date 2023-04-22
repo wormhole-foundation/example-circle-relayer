@@ -12,6 +12,10 @@ contract CircleRelayerSetters is CircleRelayerState {
         _state.pendingOwner = pendingOwner_;
     }
 
+    function setPaused(bool paused) internal {
+        _state.paused = paused;
+    }
+
     function setWormhole(address wormhole_) internal {
         _state.wormhole = payable(wormhole_);
     }

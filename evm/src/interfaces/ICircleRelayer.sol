@@ -51,6 +51,8 @@ interface ICircleRelayer {
 
     function updateMaxNativeSwapAmount(uint16 chainId_, address token, uint256 maxAmount) external;
 
+    function setPauseForTransfers(uint16 chainId_, bool paused) external;
+
     function owner() external view returns (address);
 
     function pendingOwner() external view returns (address);

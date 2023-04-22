@@ -11,6 +11,9 @@ contract CircleRelayerStorage {
         // decimals of the native token on this chain
         uint8 nativeTokenDecimals;
 
+        // If true, token transfer requests are blocked.
+        bool paused;
+
         // owner of this contract
         address owner;
 

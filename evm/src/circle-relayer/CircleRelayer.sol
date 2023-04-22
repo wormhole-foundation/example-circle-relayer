@@ -75,7 +75,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         uint256 toNativeTokenAmount,
         uint16 targetChain,
         bytes32 targetRecipientWallet
-    ) public payable nonReentrant returns (uint64 messageSequence) {
+    ) public payable nonReentrant notPaused returns (uint64 messageSequence) {
         // sanity check input values
         require(amount > 0, "amount must be > 0");
         require(targetRecipientWallet != bytes32(0), "invalid target recipient");

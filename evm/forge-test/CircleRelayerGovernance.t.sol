@@ -780,4 +780,59 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
 
         vm.stopPrank();
     }
+
+    /**
+     * @notice This test confirms that transfer requests revert when the contract is paused.
+     */
+    function testPauseBlocksTransfers() public {
+        uint256 amount = 1000;
+        uint256 toNativeTokenAmount = 10;
+        uint256 encodedRelayerFee = 50;
+        uint16 targetChain = 6;
+        bytes32 targetContractAddress = bytes32("test-transfer");
+
+        // pause transfers
+        relayer.setPauseForTransfers(relayer.chainId(), true);
+
+        // register the target contract
+        relayer.registerContract(targetChain, targetContractAddress);
+
+        // set the relayer fee
+        relayer.updateRelayerFee(
+            targetChain,
+            address(usdc),
+            encodedRelayerFee
+        );
+
+        // mint usdc to address(this)
+        mintUSDC(amount);
+
+        // approve the circle relayer to spend tokens
+        SafeERC20.safeApprove(
+            IERC20(address(usdc)),
+            address(relayer),
+            amount
+        );
+
+        // initiate a transfer with relay
+        vm.expectRevert("relayer is paused");
+        relayer.transferTokensWithRelay(
+            address(usdc),
+            amount,
+            toNativeTokenAmount,
+            targetChain,
+            addressToBytes32(address(this))
+        );
+    }
+
+    /**
+     * @notice This test confirms that transfer requests revert when the contract is paused.
+     */
+    function testPauseFailsOnWrongChainId(uint16 chainId_) public {
+        vm.assume(chainId_ != relayer.chainId());
+
+        // expect the setPauseForTransfers call to revert
+        vm.expectRevert("wrong chain");
+        relayer.setPauseForTransfers(chainId_, true);
+    }
 }

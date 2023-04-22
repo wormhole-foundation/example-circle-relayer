@@ -162,6 +162,19 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
         setMaxNativeSwapAmount(token, maxAmount);
     }
 
+    /**
+     * @notice Sets the pause state of the relayer. If paused, token transfer requests are blocked.
+     * In flight transfers, i.e. those that have a VAA emitted, can still be processed if paused.
+     * @param chainId_ Wormhole chain ID
+     * @param paused If true, requests for token transfers will be blocked and no circle transfer VAAs will be generated.
+     */
+    function setPauseForTransfers(
+        uint16 chainId_,
+        bool paused
+    ) public onlyOwner onlyCurrentChain(chainId_) {
+        setPaused(paused);
+    }
+
     modifier onlyOwner() {
         require(owner() == msg.sender, "caller not the owner");
         _;
@@ -169,6 +182,11 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
 
     modifier onlyCurrentChain(uint16 chainId_) {
         require(chainId() == chainId_, "wrong chain");
+        _;
+    }
+
+    modifier notPaused() {
+        require(!getPaused(), "relayer is paused");
         _;
     }
 }
