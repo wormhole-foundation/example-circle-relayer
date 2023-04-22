@@ -22,7 +22,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
     constructor(
         address circleIntegration_,
         uint8 nativeTokenDecimals_
-    ) public {
+    ) {
         require(circleIntegration_ != address(0), "invalid circle integration address");
         require(nativeTokenDecimals_ > 0, "invalid native decimals");
 
