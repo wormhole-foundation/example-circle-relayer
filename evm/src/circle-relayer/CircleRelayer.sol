@@ -276,8 +276,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
      * @dev The swap rate is governed by the `nativeSwapRate` state variable.
      * @param token Address of token being transferred.
      * @param toNativeAmount Quantity of tokens to be converted to native assets.
-     * @return nativeAmount The exchange rate between native assets and the
-     * `toNativeAmount` of transferred tokens.
+     * @return nativeAmount The amount of native tokens that a user receives.
      */
     function calculateNativeSwapAmountOut(
         address token,
