@@ -84,13 +84,14 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         relayer = ICircleRelayer(address(deployedRelayer));
 
         // verify initial state
-        assertEq(relayer.chainId(), wormhole.chainId());
-        assertEq(address(relayer.wormhole()), address(wormhole));
+        assertEq(relayer.chainId(), wormhole.chainId(), "Wrong circle relayer chain id");
+        assertEq(address(relayer.wormhole()), address(wormhole), "Wrong wormhole core address");
         assertEq(
             address(relayer.circleIntegration()),
-            vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS")
+            vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
+            "Wrong circle integration address"
         );
-        assertEq(relayer.nativeSwapRatePrecision(), 1e8);
+        assertEq(relayer.nativeSwapRatePrecision(), 1e8, "Wrong native swap rate precision");
     }
 
     function setUp() public {
