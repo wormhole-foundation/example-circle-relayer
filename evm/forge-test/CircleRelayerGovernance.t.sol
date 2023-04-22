@@ -59,10 +59,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     function setupUSDC() public {
         usdc = IUSDC(vm.envAddress("TESTING_USDC_TOKEN_ADDRESS"));
 
-        (, bytes memory queriedDecimals) = address(usdc).staticcall(
-            abi.encodeWithSignature("decimals()")
-        );
-        uint8 decimals = abi.decode(queriedDecimals, (uint8));
+        uint8 decimals = usdc.decimals();
         require(decimals == 6, "wrong USDC");
 
         // spoof .configureMinter() call with the master minter account

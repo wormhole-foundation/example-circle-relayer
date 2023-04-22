@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../libraries/BytesLib.sol";
 
@@ -54,7 +54,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
      * @return messageSequence Wormhole sequence for emitted TransferTokensWithRelay message.
      */
     function transferTokensWithRelay(
-        address token,
+        IERC20Metadata token,
         uint256 amount,
         uint256 toNativeTokenAmount,
         uint16 targetChain,
@@ -63,7 +63,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         // sanity check input values
         require(amount > 0, "amount must be > 0");
         require(targetRecipientWallet != bytes32(0), "invalid target recipient");
-        require(token != address(0), "token cannot equal address(0)");
+        require(address(token) != address(0), "token cannot equal address(0)");
 
         // cache the target contract address
         bytes32 targetContract = getRegisteredContract(targetChain);
@@ -74,7 +74,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
 
         // transfer the tokens to this contract
         uint256 amountReceived = custodyTokens(token, amount);
-        uint256 targetRelayerFee = relayerFee(targetChain, token);
+        uint256 targetRelayerFee = relayerFee(targetChain, address(token));
         require(
             amountReceived > targetRelayerFee + toNativeTokenAmount,
             "insufficient amountReceived"
@@ -94,7 +94,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
 
         // approve the circle integration contract to spend tokens
         SafeERC20.safeApprove(
-            IERC20(token),
+            token,
             address(integration),
             amountReceived
         );
@@ -102,7 +102,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         // transfer the tokens with instructions via the circle integration contract
         messageSequence = integration.transferTokensWithPayload(
             ICircleIntegration.TransferParameters({
-                token: token,
+                token: address(token),
                 amount: amount,
                 targetChain: targetChain,
                 mintRecipient: targetContract
@@ -148,7 +148,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         );
 
         // cache the token and recipient addresses
-        address token = bytes32ToAddress(deposit.token);
+        IERC20Metadata token = IERC20Metadata(bytes32ToAddress(deposit.token));
         address recipient = bytes32ToAddress(transferMessage.targetRecipientWallet);
 
         // If the recipient is self redeeming, send the full token amount to
@@ -158,7 +158,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
 
             // transfer the full token amount to the recipient
             SafeERC20.safeTransfer(
-                IERC20(token),
+                token,
                 recipient,
                 deposit.amount
             );
@@ -225,7 +225,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         // pay the relayer if relayerFee > 0 and the caller is not the recipient
         if (amountForRelayer > 0) {
             SafeERC20.safeTransfer(
-                IERC20(token),
+                IERC20Metadata(token),
                 msg.sender,
                 amountForRelayer
             );
@@ -233,7 +233,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
 
         // pay the target recipient the remaining minted tokens
         SafeERC20.safeTransfer(
-            IERC20(token),
+            IERC20Metadata(token),
             recipient,
             deposit.amount - amountForRelayer
         );
@@ -249,24 +249,24 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
      * swap for native assets.
      */
     function calculateMaxSwapAmountIn(
-        address token
+        IERC20Metadata token
     ) public view returns (uint256 maxAllowed) {
         // cache swap rate
-        uint256 swapRate = nativeSwapRate(token);
+        uint256 swapRate = nativeSwapRate(address(token));
         require(swapRate > 0, "swap rate not set");
 
         // cache token decimals
-        uint8 tokenDecimals_ = tokenDecimals(token);
+        uint8 tokenDecimals = token.decimals();
         uint8 nativeDecimals = nativeTokenDecimals();
 
-        if (tokenDecimals_ > nativeDecimals) {
+        if (tokenDecimals > nativeDecimals) {
             maxAllowed =
-                maxNativeSwapAmount(token) * swapRate *
-                10 ** (tokenDecimals_ - nativeDecimals) / nativeSwapRatePrecision();
+                maxNativeSwapAmount(address(token)) * swapRate *
+                10 ** (tokenDecimals - nativeDecimals) / nativeSwapRatePrecision();
         } else {
             maxAllowed =
-                (maxNativeSwapAmount(token) * swapRate) /
-                (10 ** (nativeDecimals - tokenDecimals_) * nativeSwapRatePrecision());
+                (maxNativeSwapAmount(address(token)) * swapRate) /
+                (10 ** (nativeDecimals - tokenDecimals) * nativeSwapRatePrecision());
         }
     }
 
@@ -279,58 +279,42 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
      * @return nativeAmount The amount of native tokens that a user receives.
      */
     function calculateNativeSwapAmountOut(
-        address token,
+        IERC20Metadata token,
         uint256 toNativeAmount
     ) public view returns (uint256 nativeAmount) {
         // cache swap rate
-        uint256 swapRate = nativeSwapRate(token);
+        uint256 swapRate = nativeSwapRate(address(token));
         require(swapRate > 0, "swap rate not set");
 
         // cache token decimals
-        uint8 tokenDecimals_ = tokenDecimals(token);
+        uint8 tokenDecimals = token.decimals();
         uint8 nativeDecimals = nativeTokenDecimals();
 
-        if (tokenDecimals_ > nativeDecimals) {
+        if (tokenDecimals > nativeDecimals) {
             nativeAmount =
                 nativeSwapRatePrecision() * toNativeAmount /
-                (swapRate * 10 ** (tokenDecimals_ - nativeDecimals));
+                (swapRate * 10 ** (tokenDecimals - nativeDecimals));
         } else {
             nativeAmount =
                 nativeSwapRatePrecision() * toNativeAmount *
-                10 ** (nativeDecimals - tokenDecimals_) / swapRate;
+                10 ** (nativeDecimals - tokenDecimals) / swapRate;
         }
     }
 
-    function tokenDecimals(address token) internal view returns (uint8) {
-        // fetch the token decimals
-        (,bytes memory queriedDecimals) = token.staticcall(
-            abi.encodeWithSignature("decimals()")
-        );
-        return abi.decode(queriedDecimals, (uint8));
-    }
-
-    function custodyTokens(address token, uint256 amount) internal returns (uint256) {
+    function custodyTokens(IERC20Metadata token, uint256 amount) internal returns (uint256) {
         // query own token balance before transfer
-        (,bytes memory queriedBalanceBefore) = token.staticcall(
-            abi.encodeWithSelector(IERC20.balanceOf.selector,
-            address(this))
-        );
-        uint256 balanceBefore = abi.decode(queriedBalanceBefore, (uint256));
+        uint256 balanceBefore = token.balanceOf(address(this));
 
         // deposit USDC
         SafeERC20.safeTransferFrom(
-            IERC20(token),
+            token,
             msg.sender,
             address(this),
             amount
         );
 
         // query own token balance after transfer
-        (,bytes memory queriedBalanceAfter) = token.staticcall(
-            abi.encodeWithSelector(IERC20.balanceOf.selector,
-            address(this))
-        );
-        uint256 balanceAfter = abi.decode(queriedBalanceAfter, (uint256));
+        uint256 balanceAfter = token.balanceOf(address(this));
 
         // this check is necessary since Circle's token contracts are upgradeable
         return balanceAfter - balanceBefore;
