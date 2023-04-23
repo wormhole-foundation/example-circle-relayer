@@ -46,7 +46,7 @@ export class RelayDto {
       chain: coalesceChainName(relay.fromChain),
       chainId: relay.fromChain,
       txHash: relay.fromTxHash,
-      senderAddress: relay.fromAddress,
+      senderAddress: relay.senderWallet,
       symbol: relay.symbol,
       amountSent: relay.amountTransferred,
       amountToSwap: relay.amountToSwap,
@@ -64,7 +64,7 @@ export class RelayDto {
     this.to = {
       chain: coalesceChainName(relay.toChain),
       chainId: relay.toChain,
-      recipientAddress: relay.toAddress,
+      recipientAddress: relay.recipientWallet,
       txHash: relay.toTxHash,
       gasUsed: relay.gasUsed,
       nativeAssetSymbol: relay.nativeAssetSymbol,

@@ -9,6 +9,7 @@ import {
 import {
   Addresses,
   CIRCLE_EMITTER_ADDRESSES,
+  SupportedChainId,
   USDC_DECIMALS,
   USDC_RELAYER_ADDRESSES,
   USDC_WH_SENDER,
@@ -53,12 +54,17 @@ export class CctpRelayer {
       throw new Error("No tx hash found");
     }
 
+    const sourceReceipt = await ctx.providers.evm[
+      vaa.emitterChain as SupportedChainId
+    ]![0].getTransactionReceipt(ctx.sourceTxHash);
+
     let payload: CircleVaaPayload;
 
     try {
       payload = parseVaaPayload(vaa.payload, logger);
-    } catch (e) {
+    } catch (e: any) {
       logger.error("Skipping Circle VAA. Malformed payload: ", e);
+      job.log(`Skipping Circle VAA. Malformed payload: ${e.message}`);
       throw e;
     }
 
@@ -79,7 +85,10 @@ export class CctpRelayer {
       ethers.utils.getAddress(this.usdcRelayerAddresses[toChain]!)
     ) {
       logger.warn(
-        `Unknown mintRecipient: ${mintRecipient} for chainId: ${toChain}, terminating relay`
+        `Unknown mintRecipient: ${mintRecipient} for chainId: ${toChain}, terminating relay.`
+      );
+      job.log(
+        `Unknown mintRecipient: ${mintRecipient} for chainId: ${toChain}, terminating relay.`
       );
       return;
     }
@@ -124,14 +133,10 @@ export class CctpRelayer {
     const targetRelayerAddress = this.usdcRelayerAddresses[toChain]!;
 
     // 4. extract from tx the circle log and from the circle attestation service the signature for that log
-    const receipt = await ctx.providers.evm[
-      fromChain
-    ]![0].getTransactionReceipt(ctx.sourceTxHash);
-
     logger.debug("Fetching Circle attestation");
     const { circleMessage, attestation } = await handleCircleMessageInLogs(
       this.env,
-      receipt.logs,
+      sourceReceipt.logs,
       this.circleAddresses[fromChain]!,
       fromChain,
       logger
@@ -148,7 +153,8 @@ export class CctpRelayer {
     );
     r.nativeAssetEstimated = Number(formattedQuotedNativeAtDestination);
     r.nativeAssetReceived = Number(formattedQuotedNativeAtDestination); // TODO: Change this when contract emits log with amount swapped
-    r.toAddress = recipientWallet;
+    r.senderWallet = sourceReceipt.from;
+    r.recipientWallet = recipientWallet;
     r.feeAmount = Number(ethers.utils.formatUnits(feeAmount, USDC_DECIMALS));
     r.symbol = "USDC";
     r.amountToSwap = Number(
@@ -156,6 +162,18 @@ export class CctpRelayer {
     );
     r.attempts = ctx.storage.job.attempts;
     const startedWaitingForWallet = process.hrtime();
+    const swapMessage =
+      r.amountToSwap > 0
+        ? `Swapping ${r.amountToSwap} USDC for ${r.nativeAssetEstimated} ${r.nativeAssetSymbol}.`
+        : "";
+    const msg = `Processing ${ethers.utils.formatUnits(
+      toNativeAmount,
+      USDC_DECIMALS
+    )} USDC sent from ${
+      r.senderWallet
+    } in  ${sourceChainName} to ${recipientWallet} in ${targetChainName}. ${swapMessage}`;
+    job.log(msg);
+    logger.info(msg);
     await ctx.wallets.onEVM(toChain, async (walletToolBox) => {
       const [_, waitedInNanos] = process.hrtime(startedWaitingForWallet);
       r.metrics.waitingForWalletInMs = nanoToMs(waitedInNanos);
@@ -173,6 +191,7 @@ export class CctpRelayer {
         );
         r.evmReceipt = receipt;
         r.metrics.waitingForTxInMs = waitedForTxInMs;
+        job.log(`Redeemed transfer in txhash: ${receipt.transactionHash}`);
       } catch (e: any) {
         if (e.error?.reason?.includes("already consumed")) {
           logger.info("Tx failed. This message has already been relayed.");

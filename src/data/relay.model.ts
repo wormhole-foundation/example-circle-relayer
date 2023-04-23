@@ -88,10 +88,10 @@ export class Relay extends BaseEntity {
   emitterAddress: string = "";
 
   @Column()
-  fromAddress: string = "";
+  senderWallet: string = "";
 
   @Column()
-  toAddress: string = "";
+  recipientWallet: string = "";
 
   @Column()
   sequence: string = "";
@@ -207,7 +207,7 @@ export class Relay extends BaseEntity {
     p.gasPrice = this.gasPrice;
     p.gasUsed = this.gasUsed;
     p.attempts = this.attempts;
-    p.recipient = this.toAddress;
+    p.recipient = this.recipientWallet;
     p.asset = this.symbol;
     if (this.errorMessage) {
       p.reason = this.errorMessage;

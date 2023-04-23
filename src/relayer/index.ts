@@ -3,7 +3,7 @@ import { USDC_WH_SENDER } from "../common/const";
 import { getLogger } from "../common/logging";
 import { Logger } from "winston";
 import Koa, { Context, Next } from "koa";
-import * as Router from "koa-router";
+import Router from "koa-router";
 import { CctpRelayer } from "./cctp.relayer";
 import {
   StandardRelayerApp,

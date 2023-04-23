@@ -20,7 +20,7 @@ spec:
       restartPolicy: Always
       containers:
         - name: api
-          image: $IMAGE:$TAG
+          image: $AWS_ACCOUNT.dkr.ecr.us-east-2.amazonaws.com/circle-relayer:$TAG
           command: [ "node", "api/index.js" ]
           imagePullPolicy: Always
           # uncomment to explore filesystem during crash loop
