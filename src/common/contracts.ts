@@ -1,4 +1,4 @@
-import { Contract, ethers } from "ethers";
+import { BigNumber, Contract, ethers } from "ethers";
 import { Logger } from "winston";
 import {
   CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN,
@@ -39,21 +39,60 @@ export function integrationContract(
 }
 
 export interface CircleVaaPayload {
+  version: number;
+  token: string;
+  amount: BigNumber;
+  feeAmount: BigNumber;
+  nonce: string;
   fromDomain: number;
   mintRecipient: string;
   nativeSourceTokenAddress: Buffer;
-  toNativeAmount: string;
+  toNativeAmount: BigNumber;
   fromChain: SupportedChainId;
   toDomain: number;
   toChain: SupportedChainId;
+  recipientWallet: string;
 }
 
 export function parseVaaPayload(
   payloadArray: Buffer,
   logger: Logger
 ): CircleVaaPayload {
-  const fromDomain = payloadArray.readUInt32BE(65);
-  const toDomain = payloadArray.readUInt32BE(69);
+  // start vaa payload
+  let offset = 0;
+  const version = payloadArray.readUint8(offset);
+  offset += 1; // 1
+  const nativeSourceTokenAddress = payloadArray.subarray(offset, offset + 32);
+  offset += 32; // 33
+  const amountBuff = payloadArray.subarray(offset, offset + 32);
+  offset += 32; // 65
+  const fromDomain = payloadArray.readUInt32BE(offset);
+  offset += 4; // 69
+  const toDomain = payloadArray.readUInt32BE(offset);
+  offset += 4; // 73
+  const nonce = payloadArray.readBigUint64BE(offset).toString();
+  offset += 8; // 81
+  const fromAddress = payloadArray.subarray(offset, offset + 32);
+  offset += 32; // 113
+  const mintRecipientBuff = payloadArray.subarray(offset, offset + 32);
+  offset += 32; // 145
+
+  offset += 2; // 147 (2 bytes for payload length)
+  // end vaa payload
+
+  // start relayer payload
+  const relayerPayloadId = payloadArray.readUint8(offset);
+  offset += 1; // 148
+  const feeAmount = ethers.BigNumber.from(
+    payloadArray.subarray(offset, offset + 32)
+  );
+  offset += 32; // 180
+  const toNativeAmount = ethers.BigNumber.from(
+    payloadArray.subarray(offset, offset + 32)
+  );
+  offset += 32; // 212
+  const recipientWalletBuff = payloadArray.subarray(offset, offset + 32);
+  offset += 32; // 244
 
   if (!(fromDomain in CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN)) {
     logger.warn(`Unknown fromDomain: ${fromDomain}.`);
@@ -65,18 +104,19 @@ export function parseVaaPayload(
     throw new Error("Invalid circle target domain");
   }
 
-  const nativeSourceTokenAddress = payloadArray.subarray(1, 33);
-
   // cache toChain ID
   const fromChain = CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN[fromDomain];
   const toChain = CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN[toDomain];
-  const mintRecipient = tryUint8ArrayToNative(
-    payloadArray.subarray(81, 113),
-    toChain
-  );
-  const toNativeAmount = ethers.utils.hexlify(payloadArray.subarray(180, 212));
+  const mintRecipient = tryUint8ArrayToNative(mintRecipientBuff, toChain);
+  const token = tryUint8ArrayToNative(nativeSourceTokenAddress, fromChain);
+  const amount = ethers.BigNumber.from(amountBuff);
+  const recipientWallet = tryUint8ArrayToNative(recipientWalletBuff, toChain);
 
   return {
+    version,
+    token,
+    amount,
+    nonce,
     fromDomain,
     fromChain,
     toDomain,
@@ -84,5 +124,7 @@ export function parseVaaPayload(
     nativeSourceTokenAddress,
     mintRecipient,
     toNativeAmount,
+    feeAmount,
+    recipientWallet,
   };
 }

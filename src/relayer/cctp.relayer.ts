@@ -1,4 +1,3 @@
-import { Environment, Next, StandardRelayerContext } from "wormhole-relayer";
 import { WriteApi } from "@influxdata/influxdb-client";
 import { ethers } from "ethers";
 import {
@@ -10,7 +9,7 @@ import {
 import {
   Addresses,
   CIRCLE_EMITTER_ADDRESSES,
-  SupportedChainId,
+  USDC_DECIMALS,
   USDC_RELAYER_ADDRESSES,
   USDC_WH_SENDER,
 } from "../common/const";
@@ -19,10 +18,16 @@ import {
   tryUint8ArrayToNative,
   uint8ArrayToHex,
 } from "@certusone/wormhole-sdk";
-import { RelayPoint } from "./relay-point.metrics";
-import { handleCircleMessageInLogs } from "./circle.service";
+import { handleCircleMessageInLogs } from "./circle.api";
+import { CctpRelayerContext } from "./index";
+import { Environment, Next } from "@wormhole-foundation/relayer-engine";
+import { RelayStatus } from "../data/relay.model";
 
-export class RelayerService {
+function nanoToMs(nanos: number) {
+  return nanos / 1e6;
+}
+
+export class CctpRelayer {
   private readonly circleAddresses: Addresses;
   private readonly usdcRelayerAddresses: Addresses;
   private readonly usdcWhSenderAddresses: Addresses;
@@ -33,8 +38,8 @@ export class RelayerService {
     this.usdcWhSenderAddresses = USDC_WH_SENDER[env];
   }
 
-  handleVaa = async (ctx: StandardRelayerContext, next: Next) => {
-    const { vaaBytes, logger, vaa } = ctx;
+  handleVaa = async (ctx: CctpRelayerContext, next: Next) => {
+    const { vaaBytes, logger, vaa, relay: r } = ctx;
     const job = ctx.storage.job;
 
     // 1. Make sure we want to process this VAA (going from and to circle domains that we know about, the payload is valid, etc.)
@@ -53,8 +58,8 @@ export class RelayerService {
     try {
       payload = parseVaaPayload(vaa.payload, logger);
     } catch (e) {
-      logger.error("Skipping Circle VAA", e);
-      return;
+      logger.error("Skipping Circle VAA. Malformed payload: ", e);
+      throw e;
     }
 
     const {
@@ -62,13 +67,16 @@ export class RelayerService {
       toChain,
       nativeSourceTokenAddress,
       mintRecipient,
+      amount,
       toNativeAmount,
       fromDomain,
+      recipientWallet,
+      feeAmount,
     } = payload;
 
     if (
       ethers.utils.getAddress(mintRecipient) !==
-      ethers.utils.getAddress(this.usdcRelayerAddresses[fromChain]!)
+      ethers.utils.getAddress(this.usdcRelayerAddresses[toChain]!)
     ) {
       logger.warn(
         `Unknown mintRecipient: ${mintRecipient} for chainId: ${toChain}, terminating relay`
@@ -82,8 +90,6 @@ export class RelayerService {
     logger.info(
       `Processing transaction from ${sourceChainName} to ${targetChainName}`
     );
-
-    const p = new RelayPoint(fromChain, toChain, vaa.sequence);
 
     await job.updateProgress(25);
 
@@ -107,10 +113,10 @@ export class RelayerService {
       tryUint8ArrayToNative(ethers.utils.arrayify(targetTokenAddress), toChain),
       toNativeAmount
     );
+    const formattedQuotedNativeAtDestination =
+      ethers.utils.formatEther(nativeSwapQuote);
     logger.info(
-      `Native amount to swap with contract: ${ethers.utils.formatEther(
-        nativeSwapQuote
-      )}`
+      `Native amount to swap with contract: ${formattedQuotedNativeAtDestination}`
     );
 
     await job.updateProgress(60);
@@ -123,69 +129,94 @@ export class RelayerService {
     ]![0].getTransactionReceipt(ctx.sourceTxHash);
 
     logger.debug("Fetching Circle attestation");
-    const { circleMessage, signature } = await handleCircleMessageInLogs(
+    const { circleMessage, attestation } = await handleCircleMessageInLogs(
       this.env,
       receipt.logs,
       this.circleAddresses[fromChain]!,
       fromChain,
       logger
     );
-    if (circleMessage === null || signature === null) {
+    if (circleMessage === null || attestation === null) {
       throw new Error(`Error parsing receipt, txhash: ${ctx.sourceTxHash}`);
     }
 
     job.updateProgress(70);
+    // keep metrics
+    r.toChain = toChain;
+    r.amountTransferred = Number(
+      ethers.utils.formatUnits(amount, USDC_DECIMALS)
+    );
+    r.nativeAssetEstimated = Number(formattedQuotedNativeAtDestination);
+    r.nativeAssetReceived = Number(formattedQuotedNativeAtDestination); // TODO: Change this when contract emits log with amount swapped
+    r.toAddress = recipientWallet;
+    r.feeAmount = Number(ethers.utils.formatUnits(feeAmount, USDC_DECIMALS));
+    r.symbol = "USDC";
+    r.amountToSwap = Number(
+      ethers.utils.formatUnits(toNativeAmount, USDC_DECIMALS)
+    );
+    r.attempts = ctx.storage.job.attempts;
+    const startedWaitingForWallet = process.hrtime();
     await ctx.wallets.onEVM(toChain, async (walletToolBox) => {
+      const [_, waitedInNanos] = process.hrtime(startedWaitingForWallet);
+      r.metrics.waitingForWalletInMs = nanoToMs(waitedInNanos);
       try {
         // redeem parameters for target function call
-        const redeemParameters = [
-          `0x${uint8ArrayToHex(vaaBytes)}`,
-          circleMessage,
-          signature,
-        ];
 
-        const receipt = await this.submitTx(
+        const { receipt, waitedForTxInMs } = await this.submitTx(
           ctx,
           targetRelayerAddress,
           walletToolBox.wallet,
-          redeemParameters,
+          vaaBytes,
+          circleMessage,
+          attestation,
           nativeSwapQuote
         );
-        p.redeemed(receipt.transactionHash);
+        r.evmReceipt = receipt;
+        r.metrics.waitingForTxInMs = waitedForTxInMs;
       } catch (e: any) {
         if (e.error?.reason?.includes("already consumed")) {
           logger.info("Tx failed. This message has already been relayed.");
           return;
         }
-        p.reason = e.error?.reason;
-        p.status =
-          job.attemptsMade >= ctx.storage.maxAttempts ? "failed" : "retrying";
+        r.errorMessage = e.error?.reason;
+        job.attempts >= ctx.storage.job.maxAttempts
+          ? r.markFailed(e.error?.reason, 1)
+          : r.markRetrying(job.attempts);
         job.log(
           `Error posting tx: ${e.error?.reason}. ${e.error?.code}. ${e.message}.`
         );
         throw e;
       } finally {
-        if (p.status !== "retrying") {
+        if (r.status !== RelayStatus.WAITING) {
           // avoid pushing to influx if we're still retrying
-          p.attempts = job.attemptsMade;
-          this.writeApi?.writePoint(p);
+          this.writeApi?.writePoint(r.point);
         }
       }
     });
+    await next();
   };
 
   async submitTx(
-    ctx: StandardRelayerContext,
+    ctx: CctpRelayerContext,
     targetRelayerAddress: string,
     wallet: ethers.Wallet,
-    redeemParameters: string[],
+    vaaBytes: Uint8Array,
+    circleMessage: string,
+    attestation: string,
     nativeSwapQuote: ethers.BigNumber
   ) {
     const { logger, storage } = ctx;
     const job = storage.job;
     const contract = relayerContract(targetRelayerAddress, wallet);
 
+    const redeemParameters = [
+      `0x${uint8ArrayToHex(vaaBytes)}`,
+      circleMessage,
+      attestation,
+    ];
+
     // 5. redeem the transfer on the target chain
+    const startedWaitingForTx = process.hrtime();
     const tx: ethers.ContractTransaction = await contract.redeemTokens(
       redeemParameters,
       {
@@ -194,11 +225,10 @@ export class RelayerService {
     );
 
     job.updateProgress(90);
-    const redeedReceipt: ethers.ContractReceipt = await tx.wait();
+    const receipt: ethers.ContractReceipt = await tx.wait();
+    const [_, waitedForTxInNanos] = process.hrtime(startedWaitingForTx);
 
-    logger.info(
-      `Redeemed transfer in txhash: ${redeedReceipt.transactionHash}`
-    );
-    return redeedReceipt;
+    logger.info(`Redeemed transfer in txhash: ${receipt.transactionHash}`);
+    return { receipt, waitedForTxInMs: nanoToMs(waitedForTxInNanos) };
   }
 }

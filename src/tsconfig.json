@@ -7,6 +7,8 @@
     "lib": ["es2019"],
     "skipLibCheck": true,
     "allowJs": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
@@ -14,8 +16,9 @@
     "isolatedModules": true,
     "downlevelIteration": true,
     "sourceMap": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
   },
-  "include": ["relayer", "oracle"],
+  "include": ["relayer", "oracle", "api", "common", "data"],
   "exclude": ["node_modules", "**/__tests__/*"]
 }

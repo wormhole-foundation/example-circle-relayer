@@ -1,9 +1,8 @@
-import { Environment } from "wormhole-relayer";
 import { ethers } from "ethers";
 import { circleAttestationUrl, SupportedChainId } from "../common/const";
-import { sleep } from "wormhole-relayer/lib/utils";
 import { Logger } from "winston";
 import { CHAIN_ID_ETH } from "@certusone/wormhole-sdk";
+import { Environment, sleep } from "@wormhole-foundation/relayer-engine";
 
 const fiveMinutes = 5 * 60 * 1000;
 
@@ -21,7 +20,8 @@ export async function getCircleAttestation(
     // get the post
     try {
       const res = await fetch(`${circleAttestationUrl[env]}/${messageHash}`, {
-        signal: AbortSignal.timeout(800),
+        // @ts-ignore
+        signal: AbortSignal.timeout(1200),
       });
       switch (res.status) {
         case 200:
@@ -36,7 +36,6 @@ export async function getCircleAttestation(
             throw new Error(`Body status: ${body.status}`);
           }
           return body.attestation as string;
-          break;
         case 404:
           logger.debug(
             `Circle hasn't seen message yet. Sleeping: ${timeout}ms...`
@@ -69,18 +68,18 @@ export async function handleCircleMessageInLogs(
 ) {
   const circleMessage = findCircleMessageInLogs(logs, circleEmitterAddress);
   if (circleMessage === null) {
-    return { circleMessage: null, signature: null };
+    return { circleMessage: null, attestation: null };
   }
 
   const circleMessageHash = ethers.utils.keccak256(circleMessage);
-  const signature = await getCircleAttestation(
+  const attestation = await getCircleAttestation(
     env,
     circleMessageHash,
     fromChain,
     logger
   );
 
-  return { circleMessage, signature };
+  return { circleMessage, attestation };
 }
 
 export function findCircleMessageInLogs(

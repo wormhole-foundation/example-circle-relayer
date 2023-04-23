@@ -1,6 +1,8 @@
 // Circle Bridge contracts
 import { CHAIN_ID_AVAX, CHAIN_ID_ETH } from "@certusone/wormhole-sdk";
-import { Environment } from "wormhole-relayer";
+import { Environment } from "@wormhole-foundation/relayer-engine";
+
+export const USDC_DECIMALS = 6;
 
 export const SUPPORTED_CHAINS = [CHAIN_ID_ETH, CHAIN_ID_AVAX];
 export type SupportedChainId = typeof SUPPORTED_CHAINS[number];

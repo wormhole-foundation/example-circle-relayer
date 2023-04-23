@@ -16,9 +16,9 @@ import { ChainId, coalesceChainName } from "@certusone/wormhole-sdk";
 export class RelayPoint extends Point {
   private _status?: string;
   private _amountTransferred?: number;
-  private _swapAmountToken?: number;
-  private _executedSwapAmountNative = 0;
-  private _quotedSwapAmountNative = 0;
+  private _amountToSwap?: number;
+  private _nativeAssetReceived = 0;
+  private _nativeAssetEstimated = 0;
   private _feeAmount?: number;
   private _address?: string;
   private _gasUsed = 0;
@@ -35,9 +35,9 @@ export class RelayPoint extends Point {
       .tag("asset", "USDC")
       .stringField("sequence", sequence.toString());
 
-    this.swapAmountToken = 0;
-    this.executedSwapAmountNative = 0;
-    this.quotedSwapAmountNative = 0;
+    this.amountToSwap = 0;
+    this.nativeAssetReceived = 0;
+    this.nativeAssetEstimated = 0;
   }
 
   set status(status: string) {
@@ -90,23 +90,23 @@ export class RelayPoint extends Point {
     return this._relayCost;
   }
 
-  set swapAmountToken(swapAmountToken: number | string) {
-    this._swapAmountToken = Number(swapAmountToken);
-    this.floatField("swapAmountToken", this._swapAmountToken); // how much native asset you're getting on the target chain
+  set amountToSwap(swapAmountToken: number | string) {
+    this._amountToSwap = Number(swapAmountToken);
+    this.floatField("amountToSwap", this._amountToSwap); // how much you want to exchange for native asset on the target chain
   }
 
-  set executedSwapAmountNative(executedSwapAmountNative: number | string) {
-    this._executedSwapAmountNative = Number(executedSwapAmountNative);
-    this.floatField("executedSwapAmountNative", this._executedSwapAmountNative); // how much native asset you're getting on the target chain
+  set nativeAssetReceived(executedSwapAmountNative: number | string) {
+    this._nativeAssetReceived = Number(executedSwapAmountNative);
+    this.floatField("nativeAssetReceived", this._nativeAssetReceived); // how much native asset you're getting on the target chain
   }
 
-  get executedSwapAmountNative() {
-    return this._executedSwapAmountNative;
+  get nativeAssetReceived() {
+    return this._nativeAssetReceived;
   }
 
-  set quotedSwapAmountNative(quotedSwapAmountNative: number | string) {
-    this._quotedSwapAmountNative = Number(quotedSwapAmountNative);
-    this.floatField("quotedSwapAmountNative", this._quotedSwapAmountNative); // how much native asset you're getting on the target chain
+  set nativeAssetEstimated(quotedSwapAmountNative: number | string) {
+    this._nativeAssetEstimated = Number(quotedSwapAmountNative);
+    this.floatField("nativeAssetEstimated", this._nativeAssetEstimated); // how much native asset you're getting on the target chain
   }
 
   set feeAmount(feeAmount: number | string) {

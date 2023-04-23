@@ -8,6 +8,7 @@
     "esModuleInterop": true,
     "strict": true,
     "resolveJsonModule": true,
+    "experimentalDecorators": true,
     "moduleResolution": "node"
   }
 }

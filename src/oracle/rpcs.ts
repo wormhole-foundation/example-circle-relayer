@@ -1,4 +1,3 @@
-import { Environment } from "wormhole-relayer/lib";
 import { ethers } from "ethers";
 import {
   CHAIN_ID_AVAX,
@@ -9,6 +8,7 @@ import {
   CHAIN_ID_MOONBEAM,
   CHAIN_ID_POLYGON,
 } from "@certusone/wormhole-sdk";
+import { Environment } from "@wormhole-foundation/relayer-engine";
 
 const mainnetRpcs = {
   [CHAIN_ID_ETH]: new ethers.providers.JsonRpcProvider(

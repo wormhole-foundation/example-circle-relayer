@@ -42,7 +42,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
 
     /**
      * @notice Calls Wormhole's Circle Integration contract to burn user specified tokens.
-     * It emits a Wormhole message with instructions for how to handle relayer payments
+     * It 2mits a Wormhole message with instructions for how to handle relayer payments
      * on the target contract and the quantity of tokens to convert into native assets
      * for the user.
      * @param token Address of the Circle Bridge asset to be transferred.

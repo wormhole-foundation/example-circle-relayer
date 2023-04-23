@@ -12,3 +12,4 @@ fi
 sh ./inject-privatekey-secret.sh
 sh ./inject-redis-secret.sh
 sh ./inject-influx-secret.sh
+sh ./inject-db-secret.sh

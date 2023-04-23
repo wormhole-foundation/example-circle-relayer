@@ -1,8 +1,8 @@
 import { CHAIN_ID_AVAX, CHAIN_ID_ETH } from "@certusone/wormhole-sdk";
 import { ethers, Wallet } from "ethers";
-import { Environment } from "wormhole-relayer";
 import { rpcsByEnv } from "./rpcs";
 import { relayerContract } from "../common/contracts";
+import { Environment } from "@wormhole-foundation/relayer-engine";
 
 const blockchainEnv = getBlockchainEnv(process.env.BLOCKCHAIN_ENV);
 
