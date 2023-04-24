@@ -28,9 +28,9 @@ export function storeRelays(
           emitterChain,
           vaa.emitterAddress,
           vaa.sequence,
-          3,
           logger,
-          app.env
+          app.env,
+          3
         );
         relay = new Relay({
           emitterChain: emitterChain,
@@ -107,6 +107,7 @@ export function storeRelays(
       } else {
         relay!.markRetrying(relay!.attempts);
       }
+      throw e;
     } finally {
       await relay!.save();
     }

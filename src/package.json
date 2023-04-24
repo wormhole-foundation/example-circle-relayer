@@ -26,7 +26,7 @@
     "@certusone/wormhole-sdk": "^0.9.14",
     "@improbable-eng/grpc-web-node-http-transport": "^0.15.0",
     "@influxdata/influxdb-client": "^1.33.2",
-    "@wormhole-foundation/relayer-engine": "github:wormhole-foundation/relayer-engine#f55825d68451dce820cf0f9d2d4b0e40daade395",
+    "@wormhole-foundation/relayer-engine": "github:wormhole-foundation/relayer-engine#7698ed65ccce01e3bf692b978bfb4a9ffd3e5514",
     "ethers": "^5.7.2",
     "ioredis": "^5.3.1",
     "koa": "^2.14.1",

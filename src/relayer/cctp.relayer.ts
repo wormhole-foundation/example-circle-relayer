@@ -167,11 +167,11 @@ export class CctpRelayer {
         ? `Swapping ${r.amountToSwap} USDC for ${r.nativeAssetEstimated} ${r.nativeAssetSymbol}.`
         : "";
     const msg = `Processing ${ethers.utils.formatUnits(
-      toNativeAmount,
+      amount,
       USDC_DECIMALS
     )} USDC sent from ${
       r.senderWallet
-    } in  ${sourceChainName} to ${recipientWallet} in ${targetChainName}. ${swapMessage}`;
+    } in ${sourceChainName} to ${recipientWallet} in ${targetChainName}. ${swapMessage}`;
     job.log(msg);
     logger.info(msg);
     await ctx.wallets.onEVM(toChain, async (walletToolBox) => {
