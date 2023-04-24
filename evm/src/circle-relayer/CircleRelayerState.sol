@@ -11,6 +11,9 @@ contract CircleRelayerStorage {
         // decimals of the native token on this chain
         uint8 nativeTokenDecimals;
 
+        // If true, token transfer requests are blocked.
+        bool paused;
+
         // owner of this contract
         address owner;
 
@@ -43,9 +46,6 @@ contract CircleRelayerStorage {
 
         // Wormhole chain ID to registered contract address mapping
         mapping(uint16 => bytes32) registeredContracts;
-
-        // verified message hash to boolean
-        mapping(bytes32 => bool) consumedMessages;
     }
 }
 

@@ -19,6 +19,13 @@ contract CircleRelayerGetters is CircleRelayerSetters {
         return IWormhole(_state.wormhole);
     }
 
+    /**
+     * @return paused If true, requests for token transfers will be blocked and no circle transfer VAAs will be generated.
+     */
+    function getPaused() public view returns (bool paused) {
+        paused = _state.paused;
+    }
+
     function chainId() public view returns (uint16) {
         return _state.chainId;
     }
