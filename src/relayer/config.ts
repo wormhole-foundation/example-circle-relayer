@@ -31,8 +31,8 @@ export const config = {
   blockchainEnv: getBlockchainEnv(process.env.BLOCKCHAIN_ENV ?? ""), // TODO validate and parse properly
   logLevel: process.env.LOG_LEVEL || "debug",
   privateKeys: {
-    [CHAIN_ID_ETH]: [process.env.ETH_PRIVATE_KEY],
-    [CHAIN_ID_AVAX]: [process.env.AVAX_PRIVATE_KEY],
+    [CHAIN_ID_ETH]: process.env.ETH_PRIVATE_KEY?.split(",") ?? [],
+    [CHAIN_ID_AVAX]: process.env.AVAX_PRIVATE_KEY?.split(",") ?? [],
   },
   spy: process.env.SPY_URL ?? "localhost:7073",
   concurrency: Number(process.env.RELAY_CONCURRENCY) || 1,

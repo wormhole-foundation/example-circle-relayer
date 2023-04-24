@@ -12,6 +12,21 @@ export type AddressesByEnvAndChain = {
   [e: string]: Addresses;
 };
 
+export const USDC_ERC20_ADDRESSES_BY_ENV = {
+  [Environment.MAINNET]: {
+    [CHAIN_ID_ETH]: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    [CHAIN_ID_AVAX]: "0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e",
+  },
+  [Environment.TESTNET]: {
+    [CHAIN_ID_ETH]: "0x07865c6E87B9F70255377e024ace6630C1Eaa37F",
+    [CHAIN_ID_AVAX]: "0x5425890298aed601595a70AB815c96711a31Bc65",
+  },
+  [Environment.DEVNET]: {
+    [CHAIN_ID_ETH]: "",
+    [CHAIN_ID_AVAX]: "",
+  },
+};
+
 export const CIRCLE_CONTRACT_ADDRESSES: AddressesByEnvAndChain = {
   [Environment.TESTNET]: {
     [CHAIN_ID_ETH]: "0x26413e8157cd32011e726065a5462e97dd4d03d9",

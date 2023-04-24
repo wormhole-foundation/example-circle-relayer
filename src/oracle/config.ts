@@ -3,6 +3,10 @@ import { ethers, Wallet } from "ethers";
 import { rpcsByEnv } from "./rpcs";
 import { relayerContract } from "../common/contracts";
 import { Environment } from "@wormhole-foundation/relayer-engine";
+import {
+  USDC_ERC20_ADDRESSES_BY_ENV,
+  USDC_RELAYER_ADDRESSES,
+} from "../common/const";
 
 const blockchainEnv = getBlockchainEnv(process.env.BLOCKCHAIN_ENV);
 
@@ -12,48 +16,17 @@ const strip0x = (str: string) =>
 let ethKey = process.env.ETH_PRIVATE_KEY;
 let avaxKey = process.env.AVAX_PRIVATE_KEY;
 if (!ethKey) {
-  console.error("ETH_PRIVATE_KEY is required!");
+  console.error("ETH_OWNER_PRIVATE_KEY is required!");
   process.exit(1);
 }
 if (!avaxKey) {
-  console.error("AVAX_PRIVATE_KEY is required!");
+  console.error("AVAX_OWNER_PRIVATE_KEY is required!");
   process.exit(1);
 }
 
 // supported chains
 const SUPPORTED_CHAINS = [CHAIN_ID_ETH, CHAIN_ID_AVAX];
 type SupportedChainId = typeof SUPPORTED_CHAINS[number];
-
-// circle relayer contract addresses
-const USDC_RELAYER = {
-  [Environment.MAINNET]: {
-    [CHAIN_ID_ETH]: "",
-    [CHAIN_ID_AVAX]: "",
-  },
-  [Environment.TESTNET]: {
-    [CHAIN_ID_ETH]: "0xbd227cd0513889752a792c98dab42dc4d952a33b",
-    [CHAIN_ID_AVAX]: "0x45ecf5c7cf9e73954277cb7d932d5311b0f64982",
-  },
-  [Environment.DEVNET]: {
-    [CHAIN_ID_ETH]: "",
-    [CHAIN_ID_AVAX]: "",
-  },
-};
-
-const USDC_ADDRESSES_BY_ENV = {
-  [Environment.MAINNET]: {
-    [CHAIN_ID_ETH]: "",
-    [CHAIN_ID_AVAX]: "",
-  },
-  [Environment.TESTNET]: {
-    [CHAIN_ID_ETH]: "0x07865c6E87B9F70255377e024ace6630C1Eaa37F",
-    [CHAIN_ID_AVAX]: "0x5425890298aed601595a70AB815c96711a31Bc65",
-  },
-  [Environment.DEVNET]: {
-    [CHAIN_ID_ETH]: "",
-    [CHAIN_ID_AVAX]: "",
-  },
-};
 
 const rpcs: { [k in SupportedChainId]?: ethers.providers.Provider } =
   rpcsByEnv[blockchainEnv];
@@ -91,8 +64,8 @@ export const config = {
   pricePrecision: 8, // decimal places for price precision.
   relayers: [],
   relayerContracts: signersToRelayerContracts(SIGNERS),
-  relayerContractAddresses: USDC_RELAYER,
-  usdcAddresses: USDC_ADDRESSES_BY_ENV[blockchainEnv],
+  relayerContractAddresses: USDC_RELAYER_ADDRESSES,
+  usdcAddresses: USDC_ERC20_ADDRESSES_BY_ENV[blockchainEnv],
   signers: SIGNERS,
 };
 

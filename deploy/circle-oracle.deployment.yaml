@@ -37,5 +37,5 @@ spec:
                 name: circle-oracle-env
                 optional: false
             - secretRef:
-                name: circle-relayer-key
+                name: circle-relayer-owner-key
                 optional: false
