@@ -14,6 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IWormhole} from "../src/interfaces/IWormhole.sol";
 import {IUSDC} from "../src/interfaces/IUSDC.sol";
 import {ICircleRelayer} from "../src/interfaces/ICircleRelayer.sol";
+import {ICircleIntegration} from "../src/interfaces/ICircleIntegration.sol";
 
 import {CircleRelayer} from "../src/circle-relayer/CircleRelayer.sol";
 import {CircleRelayerStructs} from "../src/circle-relayer/CircleRelayerStructs.sol";
@@ -826,7 +827,119 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     }
 
     /**
-     * @notice This test confirms that transfer requests revert when the contract is paused.
+     * @notice This test confirms that transfer requests are allowed when the contract is unpaused.
+     */
+    function testDisablingPauseAllowsTransfers() public {
+        uint256 amount = 1000;
+        uint256 toNativeTokenAmount = 10;
+        uint256 encodedRelayerFee = 50;
+        uint16 targetChain = 6;
+        bytes32 targetContractAddress = bytes32("test-transfer");
+
+        // pause transfers
+        relayer.setPauseForTransfers(relayer.chainId(), true);
+        // unpause transfers
+        relayer.setPauseForTransfers(relayer.chainId(), false);
+
+        // register the target contract
+        relayer.registerContract(targetChain, targetContractAddress);
+
+        // set the relayer fee
+        relayer.updateRelayerFee(
+            targetChain,
+            address(usdc),
+            encodedRelayerFee
+        );
+
+        // mint usdc to address(this)
+        mintUSDC(amount);
+
+        // approve the circle relayer to spend tokens
+        SafeERC20.safeApprove(
+            IERC20(address(usdc)),
+            address(relayer),
+            amount
+        );
+
+        // start listening to events
+        vm.recordLogs();
+
+        // save balance of this contract before transferring the tokens
+        uint256 balanceBefore = getBalance(address(usdc), address(this));
+        uint256 relayerBalanceBefore = getBalance(address(usdc), address(relayer));
+        uint256 usdcSupplyBefore = usdc.totalSupply();
+
+        // initiate a transfer with relay
+        relayer.transferTokensWithRelay(
+            address(usdc),
+            amount,
+            toNativeTokenAmount,
+            targetChain,
+            addressToBytes32(address(this))
+        );
+
+        // fetch recorded logs
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        // find published wormhole messages in logs
+        Vm.Log[] memory wormholeMessages =
+            wormholeSimulator.fetchWormholeMessageFromLog(logs, 1);
+        assertEq(wormholeMessages.length, 1);
+
+        // simulate signing the Wormhole message
+        // NOTE: in the wormhole-sdk, signed Wormhole messages are referred to as signed VAAs
+        bytes memory encodedMessage = wormholeSimulator.fetchSignedMessageFromLogs(
+            wormholeMessages[0],
+            relayer.chainId(),
+            address(relayer)
+        );
+
+        // parse and verify the message
+        (
+            IWormhole.VM memory wormholeMessage,
+            bool valid,
+            string memory reason
+        ) = wormhole.parseAndVerifyVM(encodedMessage);
+        require(valid, reason);
+
+        /**
+         * Parse the encoded payload into the Circle Integration DepositWithPayload
+         * struct. Then, parse the additional payload into the TransferTokensWithRelay
+         * struct and validate values.
+         */
+        ICircleIntegration integration = ICircleIntegration(relayer.circleIntegration());
+        ICircleIntegration.DepositWithPayload memory depositWithPayload =
+            integration.decodeDepositWithPayload(wormholeMessage.payload);
+        ICircleRelayer.TransferTokensWithRelay memory transfer =
+            relayer.decodeTransferTokensWithRelay(depositWithPayload.payload);
+
+        // validate values
+        assertEq(
+            balanceBefore - getBalance(address(usdc), address(this)),
+            amount
+        );
+        assertEq(transfer.payloadId, 1);
+        assertEq(
+            transfer.targetRelayerFee,
+            encodedRelayerFee
+        );
+        assertEq(transfer.toNativeTokenAmount, toNativeTokenAmount);
+        assertEq(transfer.targetRecipientWallet, addressToBytes32(address(this)));
+
+        // confirm that the relayer contract didn't eat the tokens
+        assertEq(
+            getBalance(address(usdc), address(relayer)),
+            relayerBalanceBefore
+        );
+
+        // confirm that the usdc was burned
+        assertEq(
+            usdc.totalSupply(), usdcSupplyBefore - amount
+        );
+    }
+
+    /**
+     * @notice This test confirms that pausing only works when the chain id is correct.
      */
     function testPauseFailsOnWrongChainId(uint16 chainId_) public {
         vm.assume(chainId_ != relayer.chainId());
@@ -834,5 +947,19 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         // expect the setPauseForTransfers call to revert
         vm.expectRevert("wrong chain");
         relayer.setPauseForTransfers(chainId_, true);
+    }
+
+    /**
+     * @notice This test confirms that pausing is only allowed for the `owner` account.
+     */
+    function testPauseFailsOnLackOfOwnership() public {
+        uint16 chainId = relayer.chainId();
+        // prank the caller address to something different than the owner's
+        vm.startPrank(address(wormholeSimulator));
+        // expect the setPauseForTransfers call to revert
+        vm.expectRevert("caller not the owner");
+        relayer.setPauseForTransfers(chainId, true);
+
+        vm.stopPrank();
     }
 }
