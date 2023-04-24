@@ -13,8 +13,8 @@ const blockchainEnv = getBlockchainEnv(process.env.BLOCKCHAIN_ENV);
 const strip0x = (str: string) =>
   str.startsWith("0x") ? str.substring(2) : str;
 
-let ethKey = process.env.ETH_PRIVATE_KEY;
-let avaxKey = process.env.AVAX_PRIVATE_KEY;
+let ethKey = process.env.ETH_OWNER_PRIVATE_KEY;
+let avaxKey = process.env.AVAX_OWNER_PRIVATE_KEY;
 if (!ethKey) {
   console.error("ETH_OWNER_PRIVATE_KEY is required!");
   process.exit(1);
@@ -48,7 +48,7 @@ const signersToRelayerContracts = (signers: { [s: string]: Wallet }) =>
     Object.entries(signers).map(([chainId, pk]) => [
       chainId,
       // @ts-ignore
-      relayerContract(USDC_RELAYER[blockchainEnv][chainId], pk),
+      relayerContract(USDC_RELAYER_ADDRESSES[blockchainEnv][chainId], pk),
     ])
   );
 
