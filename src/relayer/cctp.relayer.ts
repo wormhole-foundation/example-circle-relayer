@@ -8,7 +8,7 @@ import {
 } from "../common/contracts";
 import {
   Addresses,
-  CIRCLE_EMITTER_ADDRESSES,
+  CIRCLE_CONTRACT_ADDRESSES,
   SupportedChainId,
   USDC_DECIMALS,
   USDC_RELAYER_ADDRESSES,
@@ -34,7 +34,7 @@ export class CctpRelayer {
   private readonly usdcWhSenderAddresses: Addresses;
 
   constructor(public env: Environment, private writeApi?: WriteApi) {
-    this.circleAddresses = CIRCLE_EMITTER_ADDRESSES[env];
+    this.circleAddresses = CIRCLE_CONTRACT_ADDRESSES[env];
     this.usdcRelayerAddresses = USDC_RELAYER_ADDRESSES[env];
     this.usdcWhSenderAddresses = USDC_WH_SENDER[env];
   }
@@ -244,7 +244,13 @@ export class CctpRelayer {
     );
 
     job.updateProgress(90);
-    const receipt: ethers.ContractReceipt = await tx.wait();
+    let receipt: ethers.ContractReceipt = await tx.wait(1);
+    ctx.relay.toTxHash = receipt.transactionHash;
+    ctx.relay.save().catch((e: any) => {
+      logger.error(`Error saving temporary tx hash in relay: ${e.message}`);
+    });
+    receipt = await tx.wait();
+
     const [_, waitedForTxInNanos] = process.hrtime(startedWaitingForTx);
 
     logger.info(`Redeemed transfer in txhash: ${receipt.transactionHash}`);

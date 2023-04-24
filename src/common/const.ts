@@ -12,7 +12,7 @@ export type AddressesByEnvAndChain = {
   [e: string]: Addresses;
 };
 
-export const CIRCLE_EMITTER_ADDRESSES: AddressesByEnvAndChain = {
+export const CIRCLE_CONTRACT_ADDRESSES: AddressesByEnvAndChain = {
   [Environment.TESTNET]: {
     [CHAIN_ID_ETH]: "0x26413e8157cd32011e726065a5462e97dd4d03d9",
     [CHAIN_ID_AVAX]: "0xa9fb1b3009dcb79e2fe346c16a604b8fa8ae0a79",
@@ -24,8 +24,8 @@ export const CIRCLE_EMITTER_ADDRESSES: AddressesByEnvAndChain = {
 // USDC relayer contracts. We push the tx to these guys.
 export const USDC_RELAYER_ADDRESSES: AddressesByEnvAndChain = {
   [Environment.TESTNET]: {
-    [CHAIN_ID_ETH]: "0xbd227cd0513889752a792c98dab42dc4d952a33b",
-    [CHAIN_ID_AVAX]: "0x45ecf5c7cf9e73954277cb7d932d5311b0f64982",
+    [CHAIN_ID_ETH]: "0xb9f955b03cea9315247e77a09b6e2f1c587e017f",
+    [CHAIN_ID_AVAX]: "0xb9f955b03cea9315247e77a09b6e2f1c587e017f",
   },
   [Environment.MAINNET]: {
     [CHAIN_ID_ETH]: "",

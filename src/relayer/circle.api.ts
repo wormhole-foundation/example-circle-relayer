@@ -62,11 +62,11 @@ export async function getCircleAttestation(
 export async function handleCircleMessageInLogs(
   env: Environment,
   logs: ethers.providers.Log[],
-  circleEmitterAddress: string,
+  circleAddress: string,
   fromChain: SupportedChainId,
   logger: Logger
 ) {
-  const circleMessage = findCircleMessageInLogs(logs, circleEmitterAddress);
+  const circleMessage = findCircleMessageInLogs(logs, circleAddress);
   if (circleMessage === null) {
     return { circleMessage: null, attestation: null };
   }

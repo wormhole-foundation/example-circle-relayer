@@ -27,6 +27,10 @@ async function main() {
 
   router.get("/relays", relayCtrl.search);
 
+  router.get("/health", async (ctx) => {
+    ctx.body = "ok";
+  });
+
   app.use(async (ctx, next) => {
     logger.debug(`${ctx.method} ${ctx.url}`);
     const start = process.hrtime();
