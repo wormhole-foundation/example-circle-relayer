@@ -149,7 +149,7 @@ function makeNativeCurrencyPrices(
     const chainId = chain as SupportedChainId;
     const coingeckoIdForChain = chainToCoingeckoId[chainId];
     const nativeAssetPrice = coingeckoPrices[coingeckoIdForChain].usd;
-    const swapRate = (nativeAssetPrice / usdcPrice).toFixed(3);
+    const swapRate = (nativeAssetPrice / usdcPrice).toFixed(6);
     // push native -> token swap rate
     priceUpdates.set(
       chainId,
