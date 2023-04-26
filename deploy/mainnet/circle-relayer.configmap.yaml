@@ -4,7 +4,7 @@ metadata:
   name: circle-relayer-env
   namespace: circle-relayer
 data:
-  NODE_ENV: production
-  BLOCKCHAIN_ENV: mainnet
-  SPY_URL: spy:7073
-  RELAY_CONCURRENCY: "5"
+  NODE_ENV: "production"
+  BLOCKCHAIN_ENV: "mainnet"
+  SPY_URL: "spy.token-bridge-relayer.svc.cluster.local:7073"
+  RELAY_CONCURRENCY: "3"

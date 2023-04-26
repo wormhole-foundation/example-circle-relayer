@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: circle-api-env
+  namespace: circle-relayer
+data:
+  NODE_ENV: "staging"
+  BLOCKCHAIN_ENV: "testnet"
+  PORT: "8080"
+  LOG_LEVEL: "debug"

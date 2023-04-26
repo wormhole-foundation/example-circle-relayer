@@ -179,6 +179,8 @@ export class Relay extends BaseEntity {
   }
 
   markRedeemed(txHash: string) {
+    this.errorMessage = undefined;
+    this.errorCode = undefined;
     this.status = RelayStatus.REDEEMED;
     this.toTxHash = txHash;
     this.completedAt = new Date();

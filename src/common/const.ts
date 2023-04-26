@@ -80,6 +80,6 @@ export const CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN: {
 
 export const circleAttestationUrl = {
   [Environment.TESTNET]: "https://iris-api-sandbox.circle.com/attestations",
-  [Environment.MAINNET]: "",
+  [Environment.MAINNET]: "https://iris-api.circle.com/attestations",
   [Environment.DEVNET]: "",
 };
