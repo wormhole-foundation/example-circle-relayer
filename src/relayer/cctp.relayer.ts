@@ -54,10 +54,6 @@ export class CctpRelayer {
       throw new Error("No tx hash found");
     }
 
-    const sourceReceipt = await ctx.providers.evm[
-      vaa.emitterChain as SupportedChainId
-    ]![0].getTransactionReceipt(ctx.sourceTxHash);
-
     let payload: CircleVaaPayload;
 
     try {
@@ -80,9 +76,10 @@ export class CctpRelayer {
       feeAmount,
     } = payload;
 
+    const targetRelayerAddress = this.usdcRelayerAddresses[toChain]!;
     if (
       ethers.utils.getAddress(mintRecipient) !==
-      ethers.utils.getAddress(this.usdcRelayerAddresses[toChain]!)
+      ethers.utils.getAddress(targetRelayerAddress)
     ) {
       logger.warn(
         `Unknown mintRecipient: ${mintRecipient} for chainId: ${toChain}, terminating relay.`
@@ -105,22 +102,25 @@ export class CctpRelayer {
     // 2. Find the address of the encoded token on the target chain. The address
     // that is encoded in the payload is the address on the source chain.
     logger.debug("Fetching token address from target chain.");
-    const targetTokenAddress = await integrationContract(
+    const usdcAddressInTargetChain = await integrationContract(
       this.usdcWhSenderAddresses[toChain]!,
       ctx.providers.evm[toChain]![0]
     ).fetchLocalTokenAddress(fromDomain, nativeSourceTokenAddress);
 
     await job.updateProgress(50);
 
-    const contract = relayerContract(
-      this.usdcRelayerAddresses[toChain]!,
+    const relayer = relayerContract(
+      targetRelayerAddress,
       ctx.providers.evm[toChain]![0]
     );
 
     // 3. query for native amount to swap with contract
-    const nativeSwapQuote = await contract.calculateNativeSwapAmountOut(
-      tryUint8ArrayToNative(ethers.utils.arrayify(targetTokenAddress), toChain),
-      toNativeAmount
+    const nativeSwapQuote = await relayer.calculateNativeSwapAmountOut(
+      tryUint8ArrayToNative(
+        ethers.utils.arrayify(usdcAddressInTargetChain),
+        toChain
+      ),
+      toNativeAmount // 1000000000
     );
     const formattedQuotedNativeAtDestination =
       ethers.utils.formatEther(nativeSwapQuote);
@@ -130,9 +130,11 @@ export class CctpRelayer {
 
     await job.updateProgress(60);
 
-    const targetRelayerAddress = this.usdcRelayerAddresses[toChain]!;
-
     // 4. extract from tx the circle log and from the circle attestation service the signature for that log
+    const sourceReceipt = await ctx.providers.evm[
+      vaa.emitterChain as SupportedChainId
+    ]![0].getTransactionReceipt(ctx.sourceTxHash);
+
     logger.debug("Fetching Circle attestation");
     const { circleMessage, attestation } = await handleCircleMessageInLogs(
       this.env,
@@ -161,7 +163,6 @@ export class CctpRelayer {
       ethers.utils.formatUnits(toNativeAmount, USDC_DECIMALS)
     );
     r.attempts = ctx.storage.job.attempts;
-    const startedWaitingForWallet = process.hrtime();
     const swapMessage =
       r.amountToSwap > 0
         ? `Swapping ${r.amountToSwap} USDC for ${r.nativeAssetEstimated} ${r.nativeAssetSymbol}.`
@@ -174,6 +175,7 @@ export class CctpRelayer {
     } in ${sourceChainName} to ${recipientWallet} in ${targetChainName}. ${swapMessage}`;
     job.log(msg);
     logger.info(msg);
+    const startedWaitingForWallet = process.hrtime();
     await ctx.wallets.onEVM(toChain, async (walletToolBox) => {
       const [_, waitedInNanos] = process.hrtime(startedWaitingForWallet);
       r.metrics.waitingForWalletInMs = nanoToMs(waitedInNanos);
