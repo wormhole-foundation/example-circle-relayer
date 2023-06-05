@@ -19,6 +19,9 @@ import "./CircleRelayerMessages.sol";
 contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, ReentrancyGuard {
     using BytesLib for bytes;
 
+    // contract version
+    string public constant VERSION = "0.2.0";
+
     /**
      * @notice Emitted when a swap is executed with an off-chain relayer
      * @param recipient Address of the recipient of the native assets
