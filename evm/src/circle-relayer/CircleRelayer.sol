@@ -40,15 +40,18 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
 
     constructor(
         address circleIntegration_,
-        uint8 nativeTokenDecimals_
+        uint8 nativeTokenDecimals_,
+        address feeRecipient_
     ) {
         require(circleIntegration_ != address(0), "invalid circle integration address");
         require(nativeTokenDecimals_ > 0, "invalid native decimals");
+        require(feeRecipient_ != address(0), "invalid fee recipient address");
 
         // configure state
         setOwner(msg.sender);
         setCircleIntegration(circleIntegration_);
         setNativeTokenDecimals(nativeTokenDecimals_);
+        setFeeRecipient(feeRecipient_);
 
         // set wormhole and chainId by querying the integration contract state
         ICircleIntegration integration = circleIntegration();
@@ -126,7 +129,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
                 targetChain: targetChain,
                 mintRecipient: targetContract
             }),
-            0, // batchId = 0 to opt out of batching
+            0, // nonce
             encodeTransferTokensWithRelay(transferMessage)
         );
     }
@@ -134,7 +137,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
     /**
      * @notice Calls Wormhole's Circle Integration contract to complete the token transfer. Takes
      * custody of the minted tokens and sends the tokens to the target recipient.
-     * It pays the relayer in the minted token denomination. If requested by the user,
+     * It pays the fee recipient in the minted token denomination. If requested by the user,
      * it will perform a swap with the off-chain relayer to provide the user with native assets.
      * @param redeemParams Struct containing an attested Wormhole message, Circle Bridge message,
      * and Circle transfer attestation.
@@ -247,15 +250,15 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         }
 
         // add the token swap amount to the relayer fee
-        uint256 amountForRelayer =
+        uint256 amountForFeeRecipient =
             transferMessage.targetRelayerFee + transferMessage.toNativeTokenAmount;
 
         // pay the relayer if relayerFee > 0 and the caller is not the recipient
-        if (amountForRelayer > 0) {
+        if (amountForFeeRecipient > 0) {
             SafeERC20.safeTransfer(
                 IERC20Metadata(token),
-                msg.sender,
-                amountForRelayer
+                feeRecipient(),
+                amountForFeeRecipient
             );
         }
 
@@ -263,7 +266,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         SafeERC20.safeTransfer(
             IERC20Metadata(token),
             recipient,
-            deposit.amount - amountForRelayer
+            deposit.amount - amountForFeeRecipient
         );
     }
 

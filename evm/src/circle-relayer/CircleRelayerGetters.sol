@@ -38,6 +38,10 @@ contract CircleRelayerGetters is CircleRelayerSetters {
         return ICircleIntegration(_state.circleIntegration);
     }
 
+    function feeRecipient() public view returns (address) {
+        return _state.feeRecipient;
+    }
+
     function relayerFee(uint16 chainId_, address token) public view returns (uint256) {
         return _state.relayerFees[chainId_][token];
     }

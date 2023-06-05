@@ -35,6 +35,11 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     // Circle relayer contract
     ICircleRelayer relayer;
 
+    // fee recipient wallet
+    address feeRecipientWallet = vm.envAddress(
+        "TESTING_FEE_RECIPIENT"
+    );
+
     /// @notice Mints USDC to this contract
     function mintUSDC(uint256 amount) public {
         require(
@@ -80,7 +85,8 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         // deploy
         CircleRelayer deployedRelayer = new CircleRelayer(
             vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
-            uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS"))
+            uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS")),
+            feeRecipientWallet
         );
         relayer = ICircleRelayer(address(deployedRelayer));
 
@@ -92,6 +98,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
             vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
             "Wrong circle integration address"
         );
+        assertEq(relayer.feeRecipient(), feeRecipientWallet, "Wrong fee recipient address");
         assertEq(relayer.nativeSwapRatePrecision(), 1e8, "Wrong native swap rate precision");
     }
 
@@ -783,6 +790,77 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     }
 
     /**
+     * @notice This test confirms that the owner can update the
+     * `feeRecipient` state variable.
+     */
+    function testUpdateFeeRecipient(address newRecipient) public {
+        vm.assume(newRecipient != address(0));
+
+        // call updateFeeRecipient
+        relayer.updateFeeRecipient(relayer.chainId(), newRecipient);
+
+        // confirm state changes
+        assertEq(relayer.feeRecipient(), newRecipient);
+    }
+
+    /**
+     * @notice This test confirms that the owner cannot update the
+     * `feeRecipient` on the wrong chain.
+     */
+    function testUpdateFeeRecipientWrongChain(uint16 chainId_) public {
+        vm.assume(chainId_ != relayer.chainId());
+
+        // expect the updateFeeRecipient call to revert
+        vm.expectRevert("wrong chain");
+        relayer.updateFeeRecipient(chainId_, address(this));
+    }
+
+    /**
+     * @notice This test confirms that the owner cannot update the
+     * `feeRecipient` to the zero address.
+     */
+    function testUpdateFeeRecipientZeroAddress() public {
+        address zeroAddress = address(0);
+
+        // expect the updateFeeRecipient call to revert
+        bytes memory encodedSignature = abi.encodeWithSignature(
+            "updateFeeRecipient(uint16,address)",
+            relayer.chainId(),
+            zeroAddress
+        );
+        expectRevert(
+            address(relayer),
+            encodedSignature,
+            "newFeeRecipient cannot equal address(0)"
+        );
+    }
+
+    /**
+     * @notice This test confirms that ONLY the owner can update the
+     * `feeRecipient`.
+     */
+    function testUpdateFeeRecipientOwnerOnly() public {
+        address newRecipient = address(this);
+
+        // prank the caller address to something different than the owner's
+        vm.startPrank(makeAddr("wallet"));
+
+        // expect the updateFeeRecipient call to revert
+        bytes memory encodedSignature = abi.encodeWithSignature(
+            "updateFeeRecipient(uint16,address)",
+            relayer.chainId(),
+            newRecipient
+        );
+        expectRevert(
+            address(relayer),
+            encodedSignature,
+            "caller not the owner"
+        );
+
+        vm.stopPrank();
+    }
+
+    /**
      * @notice This test confirms that transfer requests revert when the contract is paused.
      */
     function testPauseBlocksTransfers() public {
@@ -954,8 +1032,10 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
      */
     function testPauseFailsOnLackOfOwnership() public {
         uint16 chainId = relayer.chainId();
+
         // prank the caller address to something different than the owner's
         vm.startPrank(address(wormholeSimulator));
+
         // expect the setPauseForTransfers call to revert
         vm.expectRevert("caller not the owner");
         relayer.setPauseForTransfers(chainId, true);

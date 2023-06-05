@@ -20,6 +20,9 @@ contract CircleRelayerStorage {
         // intermediate state when transfering contract ownership
         address pendingOwner;
 
+        // recipient of relayer fees
+        address feeRecipient;
+
         // address of the Wormhole contract on this chain
         address wormhole;
 

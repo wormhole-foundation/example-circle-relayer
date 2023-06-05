@@ -32,6 +32,10 @@ contract CircleRelayerSetters is CircleRelayerState {
         _state.circleIntegration = circleIntegration_;
     }
 
+    function setFeeRecipient(address feeRecipient_) internal {
+        _state.feeRecipient = feeRecipient_;
+    }
+
     function setRelayerFee(uint16 chainId_, address token, uint256 fee) internal {
         _state.relayerFees[chainId_][token] = fee;
     }
