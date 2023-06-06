@@ -24,10 +24,16 @@ contract ContractScript is Script {
     }
 
     function deployCircleRelayer() public {
+        // constructor args
+        address feeRecipient = vm.envAddress("RELEASE_FEE_RECIPIENT");
+        address ownerAssistant = vm.envAddress("RELEASE_OWNER_ASSISTANT");
+
         // deploy
         CircleRelayer deployedRelayer = new CircleRelayer(
             address(circleIntegration),
-            uint8(vm.envUint("RELEASE_NATIVE_TOKEN_DECIMALS"))
+            uint8(vm.envUint("RELEASE_NATIVE_TOKEN_DECIMALS")),
+            feeRecipient,
+            ownerAssistant
         );
         relayer = ICircleRelayer(address(deployedRelayer));
 
@@ -38,8 +44,9 @@ contract ContractScript is Script {
             address(relayer.circleIntegration()) ==
             address(circleIntegration)
         );
+        require(relayer.feeRecipient() == feeRecipient);
+        require(relayer.ownerAssistant() == ownerAssistant);
         require(relayer.nativeSwapRatePrecision() == 1e8);
-
     }
 
     function run() public {

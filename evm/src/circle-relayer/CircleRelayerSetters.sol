@@ -12,6 +12,10 @@ contract CircleRelayerSetters is CircleRelayerState {
         _state.pendingOwner = pendingOwner_;
     }
 
+    function setOwnerAssistant(address ownerAssistant_) internal {
+        _state.ownerAssistant = ownerAssistant_;
+    }
+
     function setPaused(bool paused) internal {
         _state.paused = paused;
     }
@@ -30,6 +34,10 @@ contract CircleRelayerSetters is CircleRelayerState {
 
     function setCircleIntegration(address circleIntegration_) internal {
         _state.circleIntegration = circleIntegration_;
+    }
+
+    function setFeeRecipient(address feeRecipient_) internal {
+        _state.feeRecipient = feeRecipient_;
     }
 
     function setRelayerFee(uint16 chainId_, address token, uint256 fee) internal {

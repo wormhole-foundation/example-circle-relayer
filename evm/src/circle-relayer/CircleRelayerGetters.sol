@@ -15,6 +15,10 @@ contract CircleRelayerGetters is CircleRelayerSetters {
         return _state.pendingOwner;
     }
 
+    function ownerAssistant() public view returns (address) {
+        return _state.ownerAssistant;
+    }
+
     function wormhole() public view returns (IWormhole) {
         return IWormhole(_state.wormhole);
     }
@@ -36,6 +40,10 @@ contract CircleRelayerGetters is CircleRelayerSetters {
 
     function circleIntegration() public view returns (ICircleIntegration) {
         return ICircleIntegration(_state.circleIntegration);
+    }
+
+    function feeRecipient() public view returns (address) {
+        return _state.feeRecipient;
     }
 
     function relayerFee(uint16 chainId_, address token) public view returns (uint256) {

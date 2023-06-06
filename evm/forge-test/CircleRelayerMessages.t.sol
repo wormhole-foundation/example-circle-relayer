@@ -30,6 +30,16 @@ contract CircleRelayerMessagesTest is Test, ForgeHelpers {
     // Circle relayer contract
     ICircleRelayer relayer;
 
+    // fee recipient wallet
+    address feeRecipientWallet = vm.envAddress(
+        "TESTING_FEE_RECIPIENT"
+    );
+
+    // owner assistant wallet
+    address ownerAssistantWallet = vm.envAddress(
+        "TESTING_OWNER_ASSISTANT"
+    );
+
     /// @notice Sets up the wormholeSimulator contracts
     function setupWormhole() public {
         // set up this chain's Wormhole
@@ -44,7 +54,9 @@ contract CircleRelayerMessagesTest is Test, ForgeHelpers {
         // deploy
         CircleRelayer deployedRelayer = new CircleRelayer(
             vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
-            uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS"))
+            uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS")),
+            feeRecipientWallet,
+            ownerAssistantWallet
         );
         relayer = ICircleRelayer(address(deployedRelayer));
 
@@ -55,6 +67,8 @@ contract CircleRelayerMessagesTest is Test, ForgeHelpers {
             address(relayer.circleIntegration()),
             vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS")
         );
+        assertEq(relayer.feeRecipient(), feeRecipientWallet);
+        assertEq(relayer.ownerAssistant(), ownerAssistantWallet);
         assertEq(relayer.nativeSwapRatePrecision(), 1e8);
     }
 
