@@ -41,17 +41,20 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
     constructor(
         address circleIntegration_,
         uint8 nativeTokenDecimals_,
-        address feeRecipient_
+        address feeRecipient_,
+        address ownerAssistant_
     ) {
         require(circleIntegration_ != address(0), "invalid circle integration address");
         require(nativeTokenDecimals_ > 0, "invalid native decimals");
         require(feeRecipient_ != address(0), "invalid fee recipient address");
+        require(ownerAssistant_ != address(0), "invalid owner assistant");
 
         // configure state
         setOwner(msg.sender);
         setCircleIntegration(circleIntegration_);
         setNativeTokenDecimals(nativeTokenDecimals_);
         setFeeRecipient(feeRecipient_);
+        setOwnerAssistant(ownerAssistant_);
 
         // set wormhole and chainId by querying the integration contract state
         ICircleIntegration integration = circleIntegration();

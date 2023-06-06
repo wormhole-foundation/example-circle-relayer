@@ -63,6 +63,11 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         "TESTING_FEE_RECIPIENT"
     );
 
+    // owner assistant wallet
+    address ownerAssistantWallet = vm.envAddress(
+        "TESTING_OWNER_ASSISTANT"
+    );
+
     // Circle Integration contract
     ICircleIntegration integration;
     address foreignCircleIntegrationAddress = vm.envAddress(
@@ -126,7 +131,8 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         CircleRelayer deployedRelayer = new CircleRelayer(
             vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
             uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS")),
-            feeRecipientWallet
+            feeRecipientWallet,
+            ownerAssistantWallet
         );
         relayer = ICircleRelayer(address(deployedRelayer));
 
@@ -148,6 +154,7 @@ contract CircleRelayerTest is Test, ForgeHelpers {
             vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS")
         );
         assertEq(relayer.feeRecipient(), feeRecipientWallet);
+        assertEq(relayer.ownerAssistant(), ownerAssistantWallet);
         assertEq(relayer.nativeSwapRatePrecision(), 1e8);
 
         // set target chain parameters

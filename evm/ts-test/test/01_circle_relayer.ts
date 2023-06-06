@@ -16,6 +16,7 @@ import {
   WALLET_PRIVATE_KEY,
   WALLET_PRIVATE_KEY_TWO,
   WALLET_PRIVATE_KEY_THREE,
+  WALLET_PRIVATE_KEY_FOUR,
   AVAX_LOCALHOST,
   ETH_FORK_CHAIN_ID,
   AVAX_FORK_CHAIN_ID,
@@ -50,6 +51,10 @@ describe("Circle Integration Test", () => {
     WALLET_PRIVATE_KEY_THREE,
     ethProvider
   );
+  const ethOwnerAssistantWallet = new ethers.Wallet(
+    WALLET_PRIVATE_KEY_FOUR,
+    ethProvider
+  );
   const ethCircleRelayer = ICircleRelayer__factory.connect(
     readCircleRelayerAddress(ETH_FORK_CHAIN_ID),
     ethWallet
@@ -71,6 +76,10 @@ describe("Circle Integration Test", () => {
   );
   const avaxFeeRecipientWallet = new ethers.Wallet(
     WALLET_PRIVATE_KEY_THREE,
+    avaxProvider
+  );
+  const avaxOwnerAssistantWallet = new ethers.Wallet(
+    WALLET_PRIVATE_KEY_FOUR,
     avaxProvider
   );
   const avaxCircleRelayer = ICircleRelayer__factory.connect(
@@ -140,6 +149,7 @@ describe("Circle Integration Test", () => {
       it("Should Set Target Relayer Fee for USDC", async () => {
         // set the relayer fee for USDC
         const receipt = await ethCircleRelayer
+          .connect(ethOwnerAssistantWallet)
           .updateRelayerFee(CHAIN_ID_AVAX, ethUsdc.address, avaxRelayerFee)
           .then((tx: ethers.ContractTransaction) => tx.wait())
           .catch((msg: any) => {
@@ -167,6 +177,7 @@ describe("Circle Integration Test", () => {
 
         // set the relayer fee for USDC
         const receipt = await ethCircleRelayer
+          .connect(ethOwnerAssistantWallet)
           .updateNativeSwapRate(CHAIN_ID_ETH, ethUsdc.address, nativeSwapRate)
           .then((tx: ethers.ContractTransaction) => tx.wait())
           .catch((msg: any) => {
@@ -235,6 +246,7 @@ describe("Circle Integration Test", () => {
       it("Should Set Target Relayer Fee for USDC", async () => {
         // set the relayer fee for USDC
         const receipt = await avaxCircleRelayer
+          .connect(avaxOwnerAssistantWallet)
           .updateRelayerFee(CHAIN_ID_ETH, avaxUsdc.address, ethRelayerFee)
           .then((tx: ethers.ContractTransaction) => tx.wait())
           .catch((msg: any) => {
@@ -260,6 +272,7 @@ describe("Circle Integration Test", () => {
 
         // set the relayer fee for USDC
         const receipt = await avaxCircleRelayer
+          .connect(avaxOwnerAssistantWallet)
           .updateNativeSwapRate(CHAIN_ID_AVAX, avaxUsdc.address, nativeSwapRate)
           .then((tx: ethers.ContractTransaction) => tx.wait())
           .catch((msg: any) => {

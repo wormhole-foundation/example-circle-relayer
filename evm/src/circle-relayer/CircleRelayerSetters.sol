@@ -12,6 +12,10 @@ contract CircleRelayerSetters is CircleRelayerState {
         _state.pendingOwner = pendingOwner_;
     }
 
+    function setOwnerAssistant(address ownerAssistant_) internal {
+        _state.ownerAssistant = ownerAssistant_;
+    }
+
     function setPaused(bool paused) internal {
         _state.paused = paused;
     }

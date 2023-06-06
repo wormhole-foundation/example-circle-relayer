@@ -41,6 +41,8 @@ interface ICircleRelayer {
 
     function confirmOwnershipTransferRequest() external;
 
+    function updateOwnerAssistant(uint16 chainId_, address newAssistant) external;
+
     function updateFeeRecipient(uint16 chainId_, address newFeeRecipient) external;
 
     function registerContract(uint16 chainId_, bytes32 contractAddress) external;
@@ -58,6 +60,8 @@ interface ICircleRelayer {
     function owner() external view returns (address);
 
     function pendingOwner() external view returns (address);
+
+    function ownerAssistant() external view returns (address);
 
     function feeRecipient() external view returns (address);
 

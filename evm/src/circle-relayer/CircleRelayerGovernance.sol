@@ -60,6 +60,25 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
     }
 
     /**
+     * @notice Updates the `ownerAssistant` state variable. This method can
+     * only be executed by the owner.
+     * @param chainId_ Wormhole chain ID.
+     * @param newAssistant Address of the new `ownerAssistant`.
+     */
+    function updateOwnerAssistant(
+        uint16 chainId_,
+        address newAssistant
+    ) public onlyOwner onlyCurrentChain(chainId_) {
+        require(
+            newAssistant != address(0),
+            "newAssistant cannot equal address(0)"
+        );
+
+        // update the owner assistant
+        setOwnerAssistant(newAssistant);
+    }
+
+    /**
      * @notice Updates the `feeRecipient` state variable. This method can
      * only be executed by the owner.
      * @param chainId_ Wormhole chain ID
@@ -119,7 +138,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
         uint16 chainId_,
         address token,
         uint256 amount
-    ) public onlyOwner {
+    ) public onlyOwnerOrAssistant {
         require(chainId_ != chainId(), "invalid chain");
         require(
             getRegisteredContract(chainId_) != bytes32(0),
@@ -147,7 +166,7 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
         uint16 chainId_,
         address token,
         uint256 swapRate
-    ) public onlyOwner onlyCurrentChain(chainId_) {
+    ) public onlyOwnerOrAssistant onlyCurrentChain(chainId_) {
         require(circleIntegration().isAcceptedToken(token), "token not accepted");
         require(swapRate > 0, "swap rate must be nonzero");
 
@@ -207,6 +226,15 @@ contract CircleRelayerGovernance is CircleRelayerGetters, ERC1967Upgrade {
 
     modifier onlyCurrentChain(uint16 chainId_) {
         require(chainId() == chainId_, "wrong chain");
+        _;
+    }
+
+    modifier onlyOwnerOrAssistant() {
+        require(
+            owner() == msg.sender ||
+            ownerAssistant() == msg.sender,
+            "caller not the owner or assistant"
+        );
         _;
     }
 

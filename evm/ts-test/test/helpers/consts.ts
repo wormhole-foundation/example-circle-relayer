@@ -30,3 +30,4 @@ export const GUARDIAN_PRIVATE_KEY = process.env.TESTING_DEVNET_GUARDIAN!;
 export const WALLET_PRIVATE_KEY = process.env.WALLET_PRIVATE_KEY!;
 export const WALLET_PRIVATE_KEY_TWO = process.env.WALLET_PRIVATE_KEY_TWO!;
 export const WALLET_PRIVATE_KEY_THREE = process.env.WALLET_PRIVATE_KEY_THREE!;
+export const WALLET_PRIVATE_KEY_FOUR = process.env.WALLET_PRIVATE_KEY_FOUR!;

@@ -15,6 +15,10 @@ contract CircleRelayerGetters is CircleRelayerSetters {
         return _state.pendingOwner;
     }
 
+    function ownerAssistant() public view returns (address) {
+        return _state.ownerAssistant;
+    }
+
     function wormhole() public view returns (IWormhole) {
         return IWormhole(_state.wormhole);
     }
