@@ -56,7 +56,7 @@ echo "overriding foundry.toml"
 mv -v cache/foundry.toml foundry.toml
 
 ## run tests here
-npx ts-mocha -t 1000000 ts-test/test/*.ts
+npx ts-mocha -t 1000000 ts/test/*.ts
 
 # nuke
 pkill anvil
