@@ -42,10 +42,10 @@ make test
 
 ## Contract Deployment
 
-Before deploying the contracts, set the `Deployment Variables` and `RPC` in the following environment files:
+Before deploying the contracts, set the `Deployment Variables` and `RPC` for your target networks in the following directories:
 
-- `evm/env/avax-fuji-testnet.env`
-- `evm/env/eth-goerli-testnet.env`
+- `evm/env/testnet`
+- `evm/env/mainnet`
 
 Then deploy the contracts by executing the following commands:
 
@@ -63,20 +63,39 @@ Make sure to deploy all contracts (save the contract addresses) before moving on
 
 ## Initial Contract Setup
 
-After deploying the contracts set the `Initial Setup Variables` in the following files:
-
-- `evm/env/avax-fuji-testnet.env`
-- `evm/env/eth-goerli-testnet.env`
-
-Then perform the initial contract setup by executing the following commands:
+First, copy the `evm/cfg/sampleDeployment.json` file and update the values based on your deployment configuration:
 
 ```
-# goerli
-. env/eth-goerli-testnet.env && PRIVATE_KEY=put_your_private_key_here bash shell-scripts/setup_circle_relayer.sh
-
-# fuji
-. env/avax-fuji-testnet.env && PRIVATE_KEY=put_your_private_key_here bash shell-scripts/setup_circle_relayer.sh
+# create the deployment.json file
+cp evm/cfg/sampleDeployment.json evm/cfg/deployment.json
 ```
+
+Next, register the deployed contracts by running the following command for each target network:
+
+```
+# start from the evm directory
+cd evm
+
+# register the contracts
+source env/testnet_or_mainnet/your_file.env && PRIVATE_KEY=your_private_key yarn register-contracts
+```
+
+Finally, set up the deployed contracts by running the following command for each target network:
+
+```
+# start from the evm directory
+cd evm
+
+# set up the contracts
+source env/testnet_or_mainnet/your_file.env && PRIVATE_KEY=your_private_key yarn configure-contract \
+-s true -r true -m true
+```
+
+Where the three command-line arguments are defined as:
+
+- `-s` - Sets the native swap rate for the configured tokens.
+- `-m` - Sets the max native swap amount for the configured tokens.
+- `-r` - Sets the outbound relayer fee for the configured tokens and chains.
 
 ## Off-Chain Circle Relayer
 
