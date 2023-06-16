@@ -15,8 +15,19 @@ contract CircleRelayerGetters is CircleRelayerSetters {
         return _state.pendingOwner;
     }
 
+    function ownerAssistant() public view returns (address) {
+        return _state.ownerAssistant;
+    }
+
     function wormhole() public view returns (IWormhole) {
         return IWormhole(_state.wormhole);
+    }
+
+    /**
+     * @return paused If true, requests for token transfers will be blocked and no circle transfer VAAs will be generated.
+     */
+    function getPaused() public view returns (bool paused) {
+        paused = _state.paused;
     }
 
     function chainId() public view returns (uint16) {
@@ -29,6 +40,10 @@ contract CircleRelayerGetters is CircleRelayerSetters {
 
     function circleIntegration() public view returns (ICircleIntegration) {
         return ICircleIntegration(_state.circleIntegration);
+    }
+
+    function feeRecipient() public view returns (address) {
+        return _state.feeRecipient;
     }
 
     function relayerFee(uint16 chainId_, address token) public view returns (uint256) {

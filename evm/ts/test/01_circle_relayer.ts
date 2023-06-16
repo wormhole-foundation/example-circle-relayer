@@ -15,6 +15,8 @@ import {
   ETH_LOCALHOST,
   WALLET_PRIVATE_KEY,
   WALLET_PRIVATE_KEY_TWO,
+  WALLET_PRIVATE_KEY_THREE,
+  WALLET_PRIVATE_KEY_FOUR,
   AVAX_LOCALHOST,
   ETH_FORK_CHAIN_ID,
   AVAX_FORK_CHAIN_ID,
@@ -45,6 +47,14 @@ describe("Circle Integration Test", () => {
     WALLET_PRIVATE_KEY_TWO,
     ethProvider
   );
+  const ethFeeRecipientWallet = new ethers.Wallet(
+    WALLET_PRIVATE_KEY_THREE,
+    ethProvider
+  );
+  const ethOwnerAssistantWallet = new ethers.Wallet(
+    WALLET_PRIVATE_KEY_FOUR,
+    ethProvider
+  );
   const ethCircleRelayer = ICircleRelayer__factory.connect(
     readCircleRelayerAddress(ETH_FORK_CHAIN_ID),
     ethWallet
@@ -62,6 +72,14 @@ describe("Circle Integration Test", () => {
   const avaxWallet = new ethers.Wallet(WALLET_PRIVATE_KEY, avaxProvider);
   const avaxRelayerWallet = new ethers.Wallet(
     WALLET_PRIVATE_KEY_TWO,
+    avaxProvider
+  );
+  const avaxFeeRecipientWallet = new ethers.Wallet(
+    WALLET_PRIVATE_KEY_THREE,
+    avaxProvider
+  );
+  const avaxOwnerAssistantWallet = new ethers.Wallet(
+    WALLET_PRIVATE_KEY_FOUR,
     avaxProvider
   );
   const avaxCircleRelayer = ICircleRelayer__factory.connect(
@@ -131,6 +149,7 @@ describe("Circle Integration Test", () => {
       it("Should Set Target Relayer Fee for USDC", async () => {
         // set the relayer fee for USDC
         const receipt = await ethCircleRelayer
+          .connect(ethOwnerAssistantWallet)
           .updateRelayerFee(CHAIN_ID_AVAX, ethUsdc.address, avaxRelayerFee)
           .then((tx: ethers.ContractTransaction) => tx.wait())
           .catch((msg: any) => {
@@ -158,6 +177,7 @@ describe("Circle Integration Test", () => {
 
         // set the relayer fee for USDC
         const receipt = await ethCircleRelayer
+          .connect(ethOwnerAssistantWallet)
           .updateNativeSwapRate(CHAIN_ID_ETH, ethUsdc.address, nativeSwapRate)
           .then((tx: ethers.ContractTransaction) => tx.wait())
           .catch((msg: any) => {
@@ -226,6 +246,7 @@ describe("Circle Integration Test", () => {
       it("Should Set Target Relayer Fee for USDC", async () => {
         // set the relayer fee for USDC
         const receipt = await avaxCircleRelayer
+          .connect(avaxOwnerAssistantWallet)
           .updateRelayerFee(CHAIN_ID_ETH, avaxUsdc.address, ethRelayerFee)
           .then((tx: ethers.ContractTransaction) => tx.wait())
           .catch((msg: any) => {
@@ -251,6 +272,7 @@ describe("Circle Integration Test", () => {
 
         // set the relayer fee for USDC
         const receipt = await avaxCircleRelayer
+          .connect(avaxOwnerAssistantWallet)
           .updateNativeSwapRate(CHAIN_ID_AVAX, avaxUsdc.address, nativeSwapRate)
           .then((tx: ethers.ContractTransaction) => tx.wait())
           .catch((msg: any) => {
@@ -391,6 +413,9 @@ describe("Circle Integration Test", () => {
         const relayerBalanceBefore = await avaxUsdc.balanceOf(
           avaxRelayerWallet.address
         );
+        const feeRecipientBalanceBefore = await avaxUsdc.balanceOf(
+          avaxFeeRecipientWallet.address
+        );
 
         // grab ether balance before redeeming the transfer
         const avaxBalanceBefore = await avaxWallet.getBalance();
@@ -439,6 +464,9 @@ describe("Circle Integration Test", () => {
         const relayerBalanceAfter = await avaxUsdc.balanceOf(
           avaxRelayerWallet.address
         );
+        const feeRecipientBalanceAfter = await avaxUsdc.balanceOf(
+          avaxFeeRecipientWallet.address
+        );
 
         // grab ether balance after redeeming the transfer
         const avaxBalanceAfter = await avaxWallet.getBalance();
@@ -469,9 +497,12 @@ describe("Circle Integration Test", () => {
         ).is.true;
 
         // relayer token balance
+        expect(relayerBalanceAfter.sub(relayerBalanceBefore).eq(0)).is.true;
+
+        // fee recipient token balance
         expect(
-          relayerBalanceAfter
-            .sub(relayerBalanceBefore)
+          feeRecipientBalanceAfter
+            .sub(feeRecipientBalanceBefore)
             .eq(relayerFee.add(toNativeTokenAmountEth))
         ).is.true;
 
@@ -577,6 +608,9 @@ describe("Circle Integration Test", () => {
         const relayerBalanceBefore = await ethUsdc.balanceOf(
           ethRelayerWallet.address
         );
+        const feeRecipientBalanceBefore = await ethUsdc.balanceOf(
+          ethFeeRecipientWallet.address
+        );
 
         // grab ether balance before redeeming the transfer
         const ethBalanceBefore = await ethWallet.getBalance();
@@ -626,6 +660,9 @@ describe("Circle Integration Test", () => {
         const relayerBalanceAfter = await ethUsdc.balanceOf(
           avaxRelayerWallet.address
         );
+        const feeRecipientBalanceAfter = await ethUsdc.balanceOf(
+          ethFeeRecipientWallet.address
+        );
 
         // grab ether balance after redeeming the transfer
         const ethBalanceAfter = await ethWallet.getBalance();
@@ -656,9 +693,12 @@ describe("Circle Integration Test", () => {
         ).is.true;
 
         // relayer token balance
+        expect(relayerBalanceAfter.sub(relayerBalanceBefore).eq(0)).is.true;
+
+        // fee recipient token balance
         expect(
-          relayerBalanceAfter
-            .sub(relayerBalanceBefore)
+          feeRecipientBalanceAfter
+            .sub(feeRecipientBalanceBefore)
             .eq(relayerFee.add(toNativeTokenAmountAvax))
         ).is.true;
 

@@ -14,6 +14,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IWormhole} from "../src/interfaces/IWormhole.sol";
 import {IUSDC} from "../src/interfaces/IUSDC.sol";
 import {ICircleRelayer} from "../src/interfaces/ICircleRelayer.sol";
+import {ICircleIntegration} from "../src/interfaces/ICircleIntegration.sol";
 
 import {CircleRelayer} from "../src/circle-relayer/CircleRelayer.sol";
 import {CircleRelayerStructs} from "../src/circle-relayer/CircleRelayerStructs.sol";
@@ -33,6 +34,16 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
 
     // Circle relayer contract
     ICircleRelayer relayer;
+
+    // fee recipient wallet
+    address feeRecipientWallet = vm.envAddress(
+        "TESTING_FEE_RECIPIENT"
+    );
+
+    // owner assistant wallet
+    address ownerAssistantWallet = vm.envAddress(
+        "TESTING_OWNER_ASSISTANT"
+    );
 
     /// @notice Mints USDC to this contract
     function mintUSDC(uint256 amount) public {
@@ -59,10 +70,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     function setupUSDC() public {
         usdc = IUSDC(vm.envAddress("TESTING_USDC_TOKEN_ADDRESS"));
 
-        (, bytes memory queriedDecimals) = address(usdc).staticcall(
-            abi.encodeWithSignature("decimals()")
-        );
-        uint8 decimals = abi.decode(queriedDecimals, (uint8));
+        uint8 decimals = usdc.decimals();
         require(decimals == 6, "wrong USDC");
 
         // spoof .configureMinter() call with the master minter account
@@ -82,18 +90,23 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         // deploy
         CircleRelayer deployedRelayer = new CircleRelayer(
             vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
-            uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS"))
+            uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS")),
+            feeRecipientWallet,
+            ownerAssistantWallet
         );
         relayer = ICircleRelayer(address(deployedRelayer));
 
         // verify initial state
-        assertEq(relayer.chainId(), wormhole.chainId());
-        assertEq(address(relayer.wormhole()), address(wormhole));
+        assertEq(relayer.chainId(), wormhole.chainId(), "Wrong circle relayer chain id");
+        assertEq(address(relayer.wormhole()), address(wormhole), "Wrong wormhole core address");
         assertEq(
             address(relayer.circleIntegration()),
-            vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS")
+            vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
+            "Wrong circle integration address"
         );
-        assertEq(relayer.nativeSwapRatePrecision(), 1e8);
+        assertEq(relayer.feeRecipient(), feeRecipientWallet, "Wrong fee recipient address");
+        assertEq(relayer.ownerAssistant(), ownerAssistantWallet, "Wrong owner assistant address");
+        assertEq(relayer.nativeSwapRatePrecision(), 1e8, "Wrong native swap rate precision");
     }
 
     function setUp() public {
@@ -185,24 +198,47 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     }
 
     /**
-     * @notice This test confirms that the owner can update the relayer fee
-     * for any registered relayer contract.
+     * @notice This test confirms that the owner (and owner assistant) can update
+     * the relayer fee for any registered relayer contract.
      */
-    function testUpdateRelayerFee(uint16 chainId_, uint256 relayerFee) public {
+    function testUpdateRelayerFee(
+        uint16 chainId_,
+        uint256 relayerFee,
+        uint256 relayerFeeTwo
+    ) public {
         vm.assume(chainId_ != relayer.chainId() && chainId_ != 0);
+        vm.assume(relayerFee != relayerFeeTwo);
 
         // register random target contract
         relayer.registerContract(chainId_, addressToBytes32(address(this)));
 
-        // update the relayer fee for USDC
-        relayer.updateRelayerFee(
-            chainId_,
-            address(usdc),
-            relayerFee
-        );
+        // update the relayer fee as owner
+        {
+            relayer.updateRelayerFee(
+                chainId_,
+                address(usdc),
+                relayerFee
+            );
 
-        // confirm state changes
-        assertEq(relayer.relayerFee(chainId_, address(usdc)), relayerFee);
+            // confirm state changes
+            assertEq(relayer.relayerFee(chainId_, address(usdc)), relayerFee);
+        }
+
+        // update the relayer fee as owner assistant
+        {
+            vm.prank(ownerAssistantWallet);
+            relayer.updateRelayerFee(
+                chainId_,
+                address(usdc),
+                relayerFeeTwo
+            );
+
+            // confirm state changes
+            assertEq(
+                relayer.relayerFee(chainId_, address(usdc)),
+                relayerFeeTwo
+            );
+        }
     }
 
     /**
@@ -267,10 +303,10 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     }
 
     /**
-     * @notice This test confirms that ONLY the owner can update the relayer
-     * fee for registered relayer contracts.
+     * @notice This test confirms that ONLY the owner (or owner assistant) can
+     * update the relayer fee for registered relayer contracts.
      */
-    function testUpdateRelayerFeeOwnerOnly() public {
+    function testUpdateRelayerFeeOwnerOrAssistantOnly() public {
         uint16 chainId_ = 42069;
         uint256 relayerFee = 1e8;
 
@@ -278,10 +314,10 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         relayer.registerContract(chainId_, addressToBytes32(address(this)));
 
         // prank the caller address to something different than the owner's
-        vm.startPrank(address(wormholeSimulator));
+        vm.startPrank(makeAddr("non-owner"));
 
         // expect the updateRelayerFee call to revert
-        vm.expectRevert("caller not the owner");
+        vm.expectRevert("caller not the owner or assistant");
         relayer.updateRelayerFee(
             chainId_,
             address(usdc),
@@ -292,24 +328,44 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
     }
 
     /**
-     * @notice This test confirms that the owner can update the native swap
-     * rate for accepted tokens.
+     * @notice This test confirms that the owner (and owner assistant) can
+     * update the native swap rate for accepted tokens.
      */
-    function testUpdateNativeSwapRate(uint256 swapRate) public {
-        vm.assume(swapRate > 0);
+    function testUpdateNativeSwapRate(
+        uint256 swapRate,
+        uint256 swapRate2
+    ) public {
+        vm.assume(swapRate > 0 && swapRate2 > 0);
+        vm.assume(swapRate != swapRate2);
 
         // cache token address
         address token = address(usdc);
 
-        // update the native to USDC swap rate
-        relayer.updateNativeSwapRate(
-            relayer.chainId(),
-            token,
-            swapRate
-        );
+        // update the USDC to native swap rate as owner
+        {
+            relayer.updateNativeSwapRate(
+                relayer.chainId(),
+                token,
+                swapRate
+            );
 
-        // confirm state changes
-        assertEq(relayer.nativeSwapRate(token), swapRate);
+            // confirm state changes
+            assertEq(relayer.nativeSwapRate(token), swapRate);
+        }
+
+        // update the USDC to native swap rate as owner assistant
+        {
+            vm.prank(ownerAssistantWallet);
+
+            relayer.updateNativeSwapRate(
+                relayer.chainId(),
+                token,
+                swapRate2
+            );
+
+            // confirm state changes
+            assertEq(relayer.nativeSwapRate(token), swapRate2);
+        }
     }
 
     /**
@@ -362,12 +418,12 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
      * @notice This test confirms that ONLY the owner can update the native
      * swap rate.
      */
-    function testUpdateNativeSwapRateOwnerOnly() public {
+    function testUpdateNativeSwapRateOwnerOrAssistantOnly() public {
         address token = address(usdc);
         uint256 swapRate = 1e10;
 
         // prank the caller address to something different than the owner's
-        vm.startPrank(address(wormholeSimulator));
+        vm.startPrank(makeAddr("not-owner"));
 
         // expect the updateNativeSwapRate call to revert
         bytes memory encodedSignature = abi.encodeWithSignature(
@@ -379,7 +435,7 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         expectRevert(
             address(relayer),
             encodedSignature,
-            "caller not the owner"
+            "caller not the owner or assistant"
         );
 
         vm.stopPrank();
@@ -779,6 +835,331 @@ contract CircleRelayerGovernanceTest is Test, ForgeHelpers {
         vm.startPrank(address(this));
         vm.expectRevert("caller must be pendingOwner");
         relayer.confirmOwnershipTransferRequest();
+
+        vm.stopPrank();
+    }
+
+    /**
+     * @notice This test confirms that the owner can update the
+     * `ownerAssistant` state variable.
+     */
+    function testUpdateOwnerAssistant(address newAssistant) public {
+        vm.assume(newAssistant != address(0));
+
+        // call updateOwnerAssistant
+        relayer.updateOwnerAssistant(relayer.chainId(), newAssistant);
+
+        // confirm state changes
+        assertEq(relayer.ownerAssistant(), newAssistant);
+    }
+
+    /**
+     * @notice This test confirms that the owner cannot update the
+     * `ownerAssistant` on the wrong chain.
+     */
+    function testUpdateOwnerAssistantWrongChain(uint16 chainId_) public {
+        vm.assume(chainId_ != relayer.chainId());
+
+        // expect the updateOwnerAssistant call to revert
+        vm.expectRevert("wrong chain");
+        relayer.updateOwnerAssistant(chainId_, address(this));
+    }
+
+    /**
+     * @notice This test confirms that the owner cannot update the
+     * `ownerAssistant` to the zero address.
+     */
+    function testUpdateOwnerAssistantZeroAddress() public {
+        address zeroAddress = address(0);
+
+        // expect the updateOwnerAssistant call to revert
+        bytes memory encodedSignature = abi.encodeWithSignature(
+            "updateOwnerAssistant(uint16,address)",
+            relayer.chainId(),
+            zeroAddress
+        );
+        expectRevert(
+            address(relayer),
+            encodedSignature,
+            "newAssistant cannot equal address(0)"
+        );
+    }
+
+    /**
+     * @notice This test confirms that ONLY the owner can update the
+     * `ownerAssistant`.
+     */
+    function testUpdateOwnerAssistantOwnerOnly() public {
+        address newAssistant = address(this);
+
+        // prank the caller address to something different than the owner's
+        vm.startPrank(makeAddr("wallet"));
+
+        // expect the updateOwnerAssistant call to revert
+        bytes memory encodedSignature = abi.encodeWithSignature(
+            "updateOwnerAssistant(uint16,address)",
+            relayer.chainId(),
+            newAssistant
+        );
+        expectRevert(
+            address(relayer),
+            encodedSignature,
+            "caller not the owner"
+        );
+
+        vm.stopPrank();
+    }
+
+    /**
+     * @notice This test confirms that the owner can update the
+     * `feeRecipient` state variable.
+     */
+    function testUpdateFeeRecipient(address newRecipient) public {
+        vm.assume(newRecipient != address(0));
+
+        // call updateFeeRecipient
+        relayer.updateFeeRecipient(relayer.chainId(), newRecipient);
+
+        // confirm state changes
+        assertEq(relayer.feeRecipient(), newRecipient);
+    }
+
+    /**
+     * @notice This test confirms that the owner cannot update the
+     * `feeRecipient` on the wrong chain.
+     */
+    function testUpdateFeeRecipientWrongChain(uint16 chainId_) public {
+        vm.assume(chainId_ != relayer.chainId());
+
+        // expect the updateFeeRecipient call to revert
+        vm.expectRevert("wrong chain");
+        relayer.updateFeeRecipient(chainId_, address(this));
+    }
+
+    /**
+     * @notice This test confirms that the owner cannot update the
+     * `feeRecipient` to the zero address.
+     */
+    function testUpdateFeeRecipientZeroAddress() public {
+        address zeroAddress = address(0);
+
+        // expect the updateFeeRecipient call to revert
+        bytes memory encodedSignature = abi.encodeWithSignature(
+            "updateFeeRecipient(uint16,address)",
+            relayer.chainId(),
+            zeroAddress
+        );
+        expectRevert(
+            address(relayer),
+            encodedSignature,
+            "newFeeRecipient cannot equal address(0)"
+        );
+    }
+
+    /**
+     * @notice This test confirms that ONLY the owner can update the
+     * `feeRecipient`.
+     */
+    function testUpdateFeeRecipientOwnerOnly() public {
+        address newRecipient = address(this);
+
+        // prank the caller address to something different than the owner's
+        vm.startPrank(makeAddr("wallet"));
+
+        // expect the updateFeeRecipient call to revert
+        bytes memory encodedSignature = abi.encodeWithSignature(
+            "updateFeeRecipient(uint16,address)",
+            relayer.chainId(),
+            newRecipient
+        );
+        expectRevert(
+            address(relayer),
+            encodedSignature,
+            "caller not the owner"
+        );
+
+        vm.stopPrank();
+    }
+
+    /**
+     * @notice This test confirms that transfer requests revert when the contract is paused.
+     */
+    function testPauseBlocksTransfers() public {
+        uint256 amount = 1000;
+        uint256 toNativeTokenAmount = 10;
+        uint256 encodedRelayerFee = 50;
+        uint16 targetChain = 6;
+        bytes32 targetContractAddress = bytes32("test-transfer");
+
+        // pause transfers
+        relayer.setPauseForTransfers(relayer.chainId(), true);
+
+        // register the target contract
+        relayer.registerContract(targetChain, targetContractAddress);
+
+        // set the relayer fee
+        relayer.updateRelayerFee(
+            targetChain,
+            address(usdc),
+            encodedRelayerFee
+        );
+
+        // mint usdc to address(this)
+        mintUSDC(amount);
+
+        // approve the circle relayer to spend tokens
+        SafeERC20.safeApprove(
+            IERC20(address(usdc)),
+            address(relayer),
+            amount
+        );
+
+        // initiate a transfer with relay
+        vm.expectRevert("relayer is paused");
+        relayer.transferTokensWithRelay(
+            address(usdc),
+            amount,
+            toNativeTokenAmount,
+            targetChain,
+            addressToBytes32(address(this))
+        );
+    }
+
+    /**
+     * @notice This test confirms that transfer requests are allowed when the contract is unpaused.
+     */
+    function testDisablingPauseAllowsTransfers() public {
+        uint256 amount = 1000;
+        uint256 toNativeTokenAmount = 10;
+        uint256 encodedRelayerFee = 50;
+        uint16 targetChain = 6;
+        bytes32 targetContractAddress = bytes32("test-transfer");
+
+        // pause transfers
+        relayer.setPauseForTransfers(relayer.chainId(), true);
+        // unpause transfers
+        relayer.setPauseForTransfers(relayer.chainId(), false);
+
+        // register the target contract
+        relayer.registerContract(targetChain, targetContractAddress);
+
+        // set the relayer fee
+        relayer.updateRelayerFee(
+            targetChain,
+            address(usdc),
+            encodedRelayerFee
+        );
+
+        // mint usdc to address(this)
+        mintUSDC(amount);
+
+        // approve the circle relayer to spend tokens
+        SafeERC20.safeApprove(
+            IERC20(address(usdc)),
+            address(relayer),
+            amount
+        );
+
+        // start listening to events
+        vm.recordLogs();
+
+        // save balance of this contract before transferring the tokens
+        uint256 balanceBefore = getBalance(address(usdc), address(this));
+        uint256 relayerBalanceBefore = getBalance(address(usdc), address(relayer));
+        uint256 usdcSupplyBefore = usdc.totalSupply();
+
+        // initiate a transfer with relay
+        relayer.transferTokensWithRelay(
+            address(usdc),
+            amount,
+            toNativeTokenAmount,
+            targetChain,
+            addressToBytes32(address(this))
+        );
+
+        // fetch recorded logs
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+
+        // find published wormhole messages in logs
+        Vm.Log[] memory wormholeMessages =
+            wormholeSimulator.fetchWormholeMessageFromLog(logs, 1);
+        assertEq(wormholeMessages.length, 1);
+
+        // simulate signing the Wormhole message
+        // NOTE: in the wormhole-sdk, signed Wormhole messages are referred to as signed VAAs
+        bytes memory encodedMessage = wormholeSimulator.fetchSignedMessageFromLogs(
+            wormholeMessages[0],
+            relayer.chainId(),
+            address(relayer)
+        );
+
+        // parse and verify the message
+        (
+            IWormhole.VM memory wormholeMessage,
+            bool valid,
+            string memory reason
+        ) = wormhole.parseAndVerifyVM(encodedMessage);
+        require(valid, reason);
+
+        /**
+         * Parse the encoded payload into the Circle Integration DepositWithPayload
+         * struct. Then, parse the additional payload into the TransferTokensWithRelay
+         * struct and validate values.
+         */
+        ICircleIntegration integration = ICircleIntegration(relayer.circleIntegration());
+        ICircleIntegration.DepositWithPayload memory depositWithPayload =
+            integration.decodeDepositWithPayload(wormholeMessage.payload);
+        ICircleRelayer.TransferTokensWithRelay memory transfer =
+            relayer.decodeTransferTokensWithRelay(depositWithPayload.payload);
+
+        // validate values
+        assertEq(
+            balanceBefore - getBalance(address(usdc), address(this)),
+            amount
+        );
+        assertEq(transfer.payloadId, 1);
+        assertEq(
+            transfer.targetRelayerFee,
+            encodedRelayerFee
+        );
+        assertEq(transfer.toNativeTokenAmount, toNativeTokenAmount);
+        assertEq(transfer.targetRecipientWallet, addressToBytes32(address(this)));
+
+        // confirm that the relayer contract didn't eat the tokens
+        assertEq(
+            getBalance(address(usdc), address(relayer)),
+            relayerBalanceBefore
+        );
+
+        // confirm that the usdc was burned
+        assertEq(
+            usdc.totalSupply(), usdcSupplyBefore - amount
+        );
+    }
+
+    /**
+     * @notice This test confirms that pausing only works when the chain id is correct.
+     */
+    function testPauseFailsOnWrongChainId(uint16 chainId_) public {
+        vm.assume(chainId_ != relayer.chainId());
+
+        // expect the setPauseForTransfers call to revert
+        vm.expectRevert("wrong chain");
+        relayer.setPauseForTransfers(chainId_, true);
+    }
+
+    /**
+     * @notice This test confirms that pausing is only allowed for the `owner` account.
+     */
+    function testPauseFailsOnLackOfOwnership() public {
+        uint16 chainId = relayer.chainId();
+
+        // prank the caller address to something different than the owner's
+        vm.startPrank(address(wormholeSimulator));
+
+        // expect the setPauseForTransfers call to revert
+        vm.expectRevert("caller not the owner");
+        relayer.setPauseForTransfers(chainId, true);
 
         vm.stopPrank();
     }

@@ -52,12 +52,20 @@ contract CircleRelayerTest is Test, ForgeHelpers {
     // max burn amount for USDC Circle bridge
     uint256 constant MAX_BURN_AMOUNT = 1e12;
 
-    // relayer and recipient wallets (random wallet addresses)
+    // relayer, recipient and feeRecipient wallets
     address relayerWallet = vm.envAddress(
         "TESTING_RELAYER_WALLET"
     );
     address recipientWallet = vm.envAddress(
         "TESTING_RECIPIENT_WALLET"
+    );
+    address feeRecipientWallet = vm.envAddress(
+        "TESTING_FEE_RECIPIENT"
+    );
+
+    // owner assistant wallet
+    address ownerAssistantWallet = vm.envAddress(
+        "TESTING_OWNER_ASSISTANT"
     );
 
     // Circle Integration contract
@@ -80,6 +88,8 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         uint256 recipientAfter;
         uint256 relayerBefore;
         uint256 relayerAfter;
+        uint256 feeRecipientBefore;
+        uint256 feeRecipientAfter;
     }
 
     function setupWormhole() public {
@@ -120,7 +130,9 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         // deploy
         CircleRelayer deployedRelayer = new CircleRelayer(
             vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS"),
-            uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS"))
+            uint8(vm.envUint("TESTING_NATIVE_TOKEN_DECIMALS")),
+            feeRecipientWallet,
+            ownerAssistantWallet
         );
         relayer = ICircleRelayer(address(deployedRelayer));
 
@@ -141,6 +153,8 @@ contract CircleRelayerTest is Test, ForgeHelpers {
             address(relayer.circleIntegration()),
             vm.envAddress("TESTING_CIRCLE_INTEGRATION_ADDRESS")
         );
+        assertEq(relayer.feeRecipient(), feeRecipientWallet);
+        assertEq(relayer.ownerAssistant(), ownerAssistantWallet);
         assertEq(relayer.nativeSwapRatePrecision(), 1e8);
 
         // set target chain parameters
@@ -675,6 +689,10 @@ contract CircleRelayerTest is Test, ForgeHelpers {
             address(usdc),
             relayerWallet
         );
+        tokenBalances.feeRecipientBefore = getBalance(
+            address(usdc),
+            feeRecipientWallet
+        );
 
         // redeem the tokens
         vm.prank(relayerWallet);
@@ -689,6 +707,10 @@ contract CircleRelayerTest is Test, ForgeHelpers {
             address(usdc),
             relayerWallet
         );
+        tokenBalances.feeRecipientAfter = getBalance(
+            address(usdc),
+            feeRecipientWallet
+        );
 
         // validate results
         assertEq(
@@ -697,6 +719,10 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
         assertEq(
             tokenBalances.relayerAfter - tokenBalances.relayerBefore,
+            0
+        );
+        assertEq(
+            tokenBalances.feeRecipientAfter - tokenBalances.feeRecipientBefore,
             encodedRelayerFee
         );
     }
@@ -875,6 +901,10 @@ contract CircleRelayerTest is Test, ForgeHelpers {
             address(usdc),
             relayerWallet
         );
+        tokenBalances.feeRecipientBefore = getBalance(
+            address(usdc),
+            feeRecipientWallet
+        );
 
         // check the native balance of the recipient
         Balances memory ethBalances;
@@ -901,6 +931,10 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         tokenBalances.relayerAfter = getBalance(
             address(usdc),
             relayerWallet
+        );
+        tokenBalances.feeRecipientAfter = getBalance(
+            address(usdc),
+            feeRecipientWallet
         );
 
         // check the native balance of the recipient and relayer
@@ -932,6 +966,10 @@ contract CircleRelayerTest is Test, ForgeHelpers {
         );
         assertEq(
             tokenBalances.relayerAfter - tokenBalances.relayerBefore,
+            0
+        );
+        assertEq(
+            tokenBalances.feeRecipientAfter - tokenBalances.feeRecipientBefore,
             encodedRelayerFee + toNativeTokenAmount
         );
 
