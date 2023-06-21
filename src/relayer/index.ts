@@ -15,7 +15,7 @@ import {
   explorerLinks,
   ExplorerLinksContext,
 } from "@xlabs/relayer-engine-middleware/lib/explorer-links.middleware";
-import { runAPI } from "@xlabs/relayer-engine-middleware/lib/api/index";
+import { runAPI } from "@xlabs/relayer-engine-middleware/lib/api";
 
 import {
   evmOverrides,
