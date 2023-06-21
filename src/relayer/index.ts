@@ -1,22 +1,31 @@
 import { config } from "./config";
-import { USDC_WH_SENDER } from "../common/const";
+import { USDC_WH_SENDER } from "../common/supported-chains.config";
 import { getLogger } from "../common/logging";
-import { Logger } from "winston";
-import Koa, { Context, Next } from "koa";
-import Router from "koa-router";
 import { CctpRelayer } from "./cctp.relayer";
 import {
   StandardRelayerApp,
   StandardRelayerContext,
 } from "@wormhole-foundation/relayer-engine";
-import { Relay } from "../data/relay.model";
-import { storeRelays } from "../data/data.middleware";
+import { DataContext, storeRelays } from "../data/data.middleware";
 import { setupDb } from "../data/db";
 import { InfluxDB, WriteApi } from "@influxdata/influxdb-client";
+import { logging } from "@xlabs/relayer-engine-middleware/lib/logging.middleware";
+import { assetPrices } from "@xlabs/relayer-engine-middleware/lib/asset-pricing.middleware";
+import {
+  explorerLinks,
+  ExplorerLinksContext,
+} from "@xlabs/relayer-engine-middleware/lib/explorer-links.middleware";
+import { runAPI } from "@xlabs/relayer-engine-middleware/lib/api/index";
 
-export interface CctpRelayerContext extends StandardRelayerContext {
-  relay: Relay;
-}
+import {
+  evmOverrides,
+  EvmOverridesContext,
+} from "@xlabs/relayer-engine-middleware/lib/override.middleware";
+
+export type CctpRelayerContext = StandardRelayerContext &
+  ExplorerLinksContext &
+  EvmOverridesContext &
+  DataContext;
 async function main() {
   const env = config.blockchainEnv;
   const logger = getLogger(config.env, config.logLevel);
@@ -48,62 +57,22 @@ async function main() {
     logger,
   });
 
+  // Custom xlabs middleware: https://github.com/XLabs/relayer-engine-middleware
+  app.use(logging(logger));
+  app.use(assetPrices());
+  app.use(explorerLinks());
+  app.use(evmOverrides());
+  // End custom xlabs middleware
+
   app.use(storeRelays(app, logger));
+
+  app.filter(serv.preFilter);
 
   app.multiple(usdcWhSenderAddresses, serv.handleVaa);
 
   app.listen();
 
   runAPI(app, config.api.port, logger);
-}
-
-function runAPI(
-  relayer: StandardRelayerApp<any>,
-  port: number,
-  rootLogger: Logger
-) {
-  const app = new Koa();
-  const router = new Router();
-
-  router.get(`/metrics`, async (ctx, _) => {
-    ctx.body = await relayer.metricsRegistry?.metrics();
-  });
-
-  router.post(
-    `/vaas/:emitterChain/:emitterAddress/:sequence`,
-    reprocessVaaById(rootLogger, relayer)
-  );
-
-  app.use(relayer.storageKoaUI("/ui"));
-
-  app.use(router.routes());
-  app.use(router.allowedMethods());
-
-  port = Number(port) || 3000;
-  app.listen(port, () => {
-    rootLogger.info(`Running on ${port}...`);
-    rootLogger.info(`For the UI, open http://localhost:${port}/ui`);
-    rootLogger.info("Make sure Redis is running on port 6379 by default");
-  });
-}
-
-function reprocessVaaById(rootLogger: Logger, relayer: StandardRelayerApp) {
-  return async (ctx: Context, _: Next) => {
-    const { emitterChain, emitterAddress, sequence } = ctx.params;
-    const logger = rootLogger.child({
-      emitterChain,
-      emitterAddress,
-      sequence,
-    });
-    logger.info("fetching vaa requested by API");
-    let vaa = await relayer.fetchVaa(emitterChain, emitterAddress, sequence);
-    if (!vaa) {
-      logger.error("fetching vaa requested by API");
-      return;
-    }
-    relayer.processVaa(Buffer.from(vaa.bytes));
-    ctx.body = "Processing";
-  };
 }
 
 main();

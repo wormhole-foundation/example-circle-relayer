@@ -1,9 +1,11 @@
 import { WriteApi } from "@influxdata/influxdb-client";
 import { ethers } from "ethers";
 import {
+  CircleRelayerPayload,
   CircleVaaPayload,
   integrationContract,
-  parseVaaPayload,
+  parseCCTPRelayerPayload,
+  parseCCTPTransferPayload,
   relayerContract,
 } from "../common/contracts";
 import {
@@ -13,7 +15,7 @@ import {
   USDC_DECIMALS,
   USDC_RELAYER_ADDRESSES,
   USDC_WH_SENDER,
-} from "../common/const";
+} from "../common/supported-chains.config";
 import {
   coalesceChainName,
   tryUint8ArrayToNative,
@@ -21,8 +23,13 @@ import {
 } from "@certusone/wormhole-sdk";
 import { handleCircleMessageInLogs } from "./circle.api";
 import { CctpRelayerContext } from "./index";
-import { Environment, Next } from "@wormhole-foundation/relayer-engine";
+import {
+  Environment,
+  Next,
+  UnrecoverableError,
+} from "@wormhole-foundation/relayer-engine";
 import { RelayStatus } from "../data/relay.model";
+import { ParsedVaaWithBytes } from "@wormhole-foundation/relayer-engine/lib";
 
 function nanoToMs(nanos: number) {
   return nanos / 1e6;
@@ -39,55 +46,78 @@ export class CctpRelayer {
     this.usdcWhSenderAddresses = USDC_WH_SENDER[env];
   }
 
+  preFilter = async (vaa: ParsedVaaWithBytes) => {
+    // 1. Make sure we want to process this VAA (going from and to circle domains that we know about, the payload is valid, etc.)
+    try {
+      const { fromChain, from } = parseCCTPTransferPayload(vaa!.payload);
+      const sourceRelayerAddress = this.usdcRelayerAddresses[fromChain]!;
+      return (
+        ethers.utils.getAddress(from) ===
+        ethers.utils.getAddress(sourceRelayerAddress)
+      );
+    } catch (e: any) {
+      return false;
+    }
+  };
+
   handleVaa = async (ctx: CctpRelayerContext, next: Next) => {
     const { vaaBytes, logger, vaa, relay: r } = ctx;
     const job = ctx.storage.job;
+    const emitterChain = vaa!.emitterChain as SupportedChainId;
 
-    // 1. Make sure we want to process this VAA (going from and to circle domains that we know about, the payload is valid, etc.)
-    if (!vaa || !vaaBytes) {
-      logger.error("Could not find a vaa in ctx");
-      throw new Error("No vaa in context");
-    }
+    let payload: CircleVaaPayload;
 
     if (!ctx.sourceTxHash) {
       logger.error("No tx hash");
       throw new Error("No tx hash found");
     }
 
-    let payload: CircleVaaPayload;
+    logger.info(`Source tx hash: ${ctx.sourceTxHash}`);
 
     try {
-      payload = parseVaaPayload(vaa.payload, logger);
+      payload = parseCCTPTransferPayload(vaa!.payload);
     } catch (e: any) {
       logger.error("Skipping Circle VAA. Malformed payload: ", e);
-      job.log(`Skipping Circle VAA. Malformed payload: ${e.message}`);
-      throw e;
+      throw new UnrecoverableError(e.message);
     }
 
     const {
       fromChain,
       toChain,
       nativeSourceTokenAddress,
-      mintRecipient,
+      to,
       amount,
-      toNativeAmount,
       fromDomain,
-      recipientWallet,
-      feeAmount,
     } = payload;
 
+    let relayerPayload: CircleRelayerPayload;
+    try {
+      relayerPayload = parseCCTPRelayerPayload(payload.payload, toChain);
+    } catch (e: any) {
+      logger.error("Skipping Circle Relayer VAA. Malformed payload: ", e);
+      throw new UnrecoverableError(e.message);
+    }
+
+    const { feeAmount, toNativeAmount, recipientWallet, payloadId } =
+      relayerPayload;
+
+    if (payloadId > 1) {
+      logger.error(
+        `Skipping Circle Relayer VAA. Unknown payload id: ${payloadId}`
+      );
+      throw new UnrecoverableError("Unknown payload id");
+    }
+
+    // 1. Make sure we want to process this VAA (going from and to circle domains that we know about, the payload is valid, etc.)
     const targetRelayerAddress = this.usdcRelayerAddresses[toChain]!;
     if (
-      ethers.utils.getAddress(mintRecipient) !==
+      ethers.utils.getAddress(to) !==
       ethers.utils.getAddress(targetRelayerAddress)
     ) {
-      logger.warn(
-        `Unknown mintRecipient: ${mintRecipient} for chainId: ${toChain}, terminating relay.`
+      logger.error(
+        `Contracts or relayer misconfigured: Unknown mintRecipient: ${to} for chainId: ${toChain} (configured: ${targetRelayerAddress}), terminating relay.`
       );
-      job.log(
-        `Unknown mintRecipient: ${mintRecipient} for chainId: ${toChain}, terminating relay.`
-      );
-      return;
+      throw new UnrecoverableError(`Unknown mintRecipient: ${to}`);
     }
 
     const sourceChainName = coalesceChainName(fromChain);
@@ -132,8 +162,8 @@ export class CctpRelayer {
 
     // 4. extract from tx the circle log and from the circle attestation service the signature for that log
     const sourceReceipt = await ctx.providers.evm[
-      vaa.emitterChain as SupportedChainId
-    ]![0].getTransactionReceipt(ctx.sourceTxHash);
+      emitterChain
+    ]![0].getTransactionReceipt(ctx.sourceTxHash!);
 
     logger.debug("Fetching Circle attestation");
     const { circleMessage, attestation } = await handleCircleMessageInLogs(
@@ -167,33 +197,36 @@ export class CctpRelayer {
       r.amountToSwap > 0
         ? `Swapping ${r.amountToSwap} USDC for ${r.nativeAssetEstimated} ${r.nativeAssetSymbol}.`
         : "";
-    const msg = `Processing ${ethers.utils.formatUnits(
-      amount,
-      USDC_DECIMALS
-    )} USDC sent from ${
-      r.senderWallet
-    } in ${sourceChainName} to ${recipientWallet} in ${targetChainName}. ${swapMessage}`;
-    job.log(msg);
-    logger.info(msg);
+
+    logger.info(
+      `Processing ${ethers.utils.formatUnits(
+        amount,
+        USDC_DECIMALS
+      )} USDC sent from ${
+        r.senderWallet
+      } in ${sourceChainName} to ${recipientWallet} in ${targetChainName}. ${swapMessage}`
+    );
+
     const startedWaitingForWallet = process.hrtime();
-    await ctx.wallets.onEVM(toChain, async (walletToolBox) => {
+    await ctx.wallets.onEVM(toChain, async (w) => {
       const [_, waitedInNanos] = process.hrtime(startedWaitingForWallet);
       r.metrics.waitingForWalletInMs = nanoToMs(waitedInNanos);
       try {
         // redeem parameters for target function call
-
         const { receipt, waitedForTxInMs } = await this.submitTx(
           ctx,
           targetRelayerAddress,
-          walletToolBox.wallet,
-          vaaBytes,
+          w.wallet,
+          vaaBytes!,
           circleMessage,
           attestation,
           nativeSwapQuote
         );
         r.evmReceipt = receipt;
         r.metrics.waitingForTxInMs = waitedForTxInMs;
-        job.log(`Redeemed transfer in txhash: ${receipt.transactionHash}`);
+        logger.info(
+          `Redeemed source transfer: ${ctx.sourceTxHash} in txhash: ${receipt.transactionHash}`
+        );
       } catch (e: any) {
         if (e.error?.reason?.includes("already consumed")) {
           logger.info("Tx failed. This message has already been relayed.");
@@ -203,7 +236,7 @@ export class CctpRelayer {
         job.attempts >= ctx.storage.job.maxAttempts
           ? r.markFailed(e.error?.reason, 1)
           : r.markRetrying(job.attempts);
-        job.log(
+        logger.error(
           `Error posting tx: ${e.error?.reason}. ${e.error?.code}. ${e.message}.`
         );
         throw e;
@@ -255,7 +288,6 @@ export class CctpRelayer {
 
     const [_, waitedForTxInNanos] = process.hrtime(startedWaitingForTx);
 
-    logger.info(`Redeemed transfer in txhash: ${receipt.transactionHash}`);
     return { receipt, waitedForTxInMs: nanoToMs(waitedForTxInNanos) };
   }
 }

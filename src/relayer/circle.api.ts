@@ -1,5 +1,8 @@
 import { ethers } from "ethers";
-import { circleAttestationUrl, SupportedChainId } from "../common/const";
+import {
+  circleAttestationUrl,
+  SupportedChainId,
+} from "../common/supported-chains.config";
 import { Logger } from "winston";
 import { CHAIN_ID_ETH } from "@certusone/wormhole-sdk";
 import { Environment, sleep } from "@wormhole-foundation/relayer-engine";

@@ -5,7 +5,10 @@ import {
   getCoingeckoTokens,
   usdcCoingeckoId,
 } from "./coingecko";
-import { SUPPORTED_CHAINS, SupportedChainId } from "../common/const";
+import {
+  SUPPORTED_CHAINS,
+  SupportedChainId,
+} from "../common/supported-chains.config";
 import { getLogger } from "../common/logging";
 import { ethers } from "ethers";
 import { ChainId, coalesceChainName } from "@certusone/wormhole-sdk";

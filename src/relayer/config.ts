@@ -1,4 +1,8 @@
-import { CHAIN_ID_AVAX, CHAIN_ID_ETH } from "@certusone/wormhole-sdk";
+import {
+  CHAIN_ID_ARBITRUM,
+  CHAIN_ID_AVAX,
+  CHAIN_ID_ETH,
+} from "@certusone/wormhole-sdk";
 import { ClusterOptions, RedisOptions } from "ioredis";
 import { Environment } from "@wormhole-foundation/relayer-engine";
 
@@ -16,13 +20,18 @@ export function getBlockchainEnv(env: string): Environment {
   }
 }
 
-if (!process.env.ETH_PRIVATE_KEY) {
-  throw new Error("ETH_PRIVATE_KEY not set");
+if (!process.env.EVM_PRIVATE_KEY) {
+  if (!process.env.AVAX_PRIVATE_KEY) {
+    throw new Error("AVAX_PRIVATE_KEY not set");
+  }
+  if (!process.env.ARBITRUM_PRIVATE_KEY) {
+    throw new Error("ARBITRUM_PRIVATE_KEY not set");
+  }
+  if (!process.env.ETH_PRIVATE_KEY) {
+    throw new Error("ETH_PRIVATE_KEY not set");
+  }
 }
-
-if (!process.env.AVAX_PRIVATE_KEY) {
-  throw new Error("AVAX_PRIVATE_KEY not set");
-}
+const evmPrivateKeys = process.env.EVM_PRIVATE_KEY?.split(",") ?? [];
 
 const isRedisCluster = !!process.env.REDIS_CLUSTER_ENDPOINTS;
 
@@ -31,8 +40,10 @@ export const config = {
   blockchainEnv: getBlockchainEnv(process.env.BLOCKCHAIN_ENV ?? ""), // TODO validate and parse properly
   logLevel: process.env.LOG_LEVEL || "debug",
   privateKeys: {
-    [CHAIN_ID_ETH]: process.env.ETH_PRIVATE_KEY?.split(",") ?? [],
-    [CHAIN_ID_AVAX]: process.env.AVAX_PRIVATE_KEY?.split(",") ?? [],
+    [CHAIN_ID_ETH]: process.env.ETH_PRIVATE_KEY?.split(",") ?? evmPrivateKeys,
+    [CHAIN_ID_AVAX]: process.env.AVAX_PRIVATE_KEY?.split(",") ?? evmPrivateKeys,
+    [CHAIN_ID_ARBITRUM]:
+      process.env.ARBITRUM_PRIVATE_KEY?.split(",") ?? evmPrivateKeys,
   },
   spy: process.env.SPY_URL ?? "localhost:7073",
   concurrency: Number(process.env.RELAY_CONCURRENCY) || 1,
