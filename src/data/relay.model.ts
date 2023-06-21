@@ -31,7 +31,7 @@ import {
 import { RelayPoint } from "./relay.metrics";
 import { ethers } from "ethers";
 import { formatEther, formatUnits } from "ethers/lib/utils";
-import { USDC_DECIMALS } from "../common/const";
+import { USDC_DECIMALS } from "../common/supported-chains.config";
 
 export enum RelayStatus {
   REDEEMED = "redeemed",

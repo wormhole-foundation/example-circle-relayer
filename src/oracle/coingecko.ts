@@ -1,5 +1,5 @@
 import { CHAIN_ID_AVAX, CHAIN_ID_ETH } from "@certusone/wormhole-sdk";
-import { SupportedChainId } from "../common/const";
+import { SupportedChainId } from "../common/supported-chains.config";
 
 const axios = require("axios"); // import breaks
 

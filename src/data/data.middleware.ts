@@ -5,10 +5,16 @@ import {
   RelayerApp,
   RelayerEvents,
   RelayJob,
+  SourceTxContext,
+  StorageContext,
 } from "@wormhole-foundation/relayer-engine";
 import { Logger } from "winston";
 import { ParsedVaaWithBytes } from "@wormhole-foundation/relayer-engine/lib";
 import { CctpRelayerContext } from "../relayer";
+
+export interface DataContext extends StorageContext, SourceTxContext {
+  relay: Relay;
+}
 
 export function storeRelays(
   app: RelayerApp<CctpRelayerContext>,
@@ -58,10 +64,7 @@ export function storeRelays(
     }
   );
 
-  return async function storeRelaysMiddleware(
-    ctx: CctpRelayerContext,
-    next: Next
-  ) {
+  return async function storeRelaysMiddleware(ctx: DataContext, next: Next) {
     const vaa = ctx.vaa!;
     const { emitterChain, emitterAddress, sequence } = vaa.id;
 

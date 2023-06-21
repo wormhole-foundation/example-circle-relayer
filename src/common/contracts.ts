@@ -1,9 +1,8 @@
 import { BigNumber, Contract, ethers } from "ethers";
-import { Logger } from "winston";
 import {
   CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN,
   SupportedChainId,
-} from "../common/const";
+} from "./supported-chains.config";
 import { tryUint8ArrayToNative } from "@certusone/wormhole-sdk";
 
 export function relayerContract(
@@ -40,23 +39,30 @@ export function integrationContract(
 
 export interface CircleVaaPayload {
   version: number;
-  token: string;
+  token: string; // usdc token address in native format
   amount: BigNumber;
-  feeAmount: BigNumber;
   nonce: string;
+  // Circle domains
   fromDomain: number;
-  mintRecipient: string;
-  nativeSourceTokenAddress: Buffer;
-  toNativeAmount: BigNumber;
-  fromChain: SupportedChainId;
   toDomain: number;
+  //
+  fromChain: SupportedChainId;
+  from: string; // native format
   toChain: SupportedChainId;
-  recipientWallet: string;
+  to: string; // native format
+  nativeSourceTokenAddress: Buffer;
+  payload: Buffer;
 }
 
-export function parseVaaPayload(
-  payloadArray: Buffer,
-  logger: Logger
+export interface CircleRelayerPayload {
+  payloadId: number;
+  feeAmount: BigNumber;
+  recipientWallet: string; // native format
+  toNativeAmount: BigNumber;
+}
+
+export function parseCCTPTransferPayload(
+  payloadArray: Buffer
 ): CircleVaaPayload {
   // start vaa payload
   let offset = 0;
@@ -72,16 +78,55 @@ export function parseVaaPayload(
   offset += 4; // 73
   const nonce = payloadArray.readBigUint64BE(offset).toString();
   offset += 8; // 81
-  const fromAddress = payloadArray.subarray(offset, offset + 32);
+  const fromAddressBytes = payloadArray.subarray(offset, offset + 32);
   offset += 32; // 113
   const mintRecipientBuff = payloadArray.subarray(offset, offset + 32);
   offset += 32; // 145
 
   offset += 2; // 147 (2 bytes for payload length)
+  const payload = payloadArray.subarray(offset);
   // end vaa payload
 
+  if (!(fromDomain in CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN)) {
+    throw new Error(`Invalid circle source domain: ${fromDomain})`);
+  }
+
+  if (!(toDomain in CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN)) {
+    throw new Error(`Invalid circle target domain: ${toDomain})`);
+  }
+
+  // cache toChain ID
+  const fromChain = CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN[fromDomain];
+  const fromAddress = tryUint8ArrayToNative(fromAddressBytes, fromChain);
+  const toChain = CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN[toDomain];
+  const to = tryUint8ArrayToNative(mintRecipientBuff, toChain);
+  const token = tryUint8ArrayToNative(nativeSourceTokenAddress, fromChain);
+  const amount = ethers.BigNumber.from(amountBuff);
+
+  return {
+    version,
+    token,
+    amount,
+    nonce,
+    fromDomain,
+    fromChain,
+    from: fromAddress,
+    toDomain,
+    toChain,
+    nativeSourceTokenAddress,
+    to,
+    payload,
+  };
+}
+
+export function parseCCTPRelayerPayload(
+  payloadArray: Buffer,
+  toChain: SupportedChainId
+): CircleRelayerPayload {
+  let offset = 0;
+
   // start relayer payload
-  const relayerPayloadId = payloadArray.readUint8(offset);
+  const payloadId = payloadArray.readUint8(offset);
   offset += 1; // 148
   const feeAmount = ethers.BigNumber.from(
     payloadArray.subarray(offset, offset + 32)
@@ -91,40 +136,16 @@ export function parseVaaPayload(
     payloadArray.subarray(offset, offset + 32)
   );
   offset += 32; // 212
-  const recipientWalletBuff = payloadArray.subarray(offset, offset + 32);
-  offset += 32; // 244
-
-  if (!(fromDomain in CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN)) {
-    logger.warn(`Unknown fromDomain: ${fromDomain}.`);
-    throw new Error("Invalid circle source domain");
-  }
-
-  if (!(toDomain in CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN)) {
-    logger.warn(`Unknown toDomain: ${toDomain}. Skipping...`);
-    throw new Error("Invalid circle target domain");
-  }
-
-  // cache toChain ID
-  const fromChain = CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN[fromDomain];
-  const toChain = CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN[toDomain];
-  const mintRecipient = tryUint8ArrayToNative(mintRecipientBuff, toChain);
-  const token = tryUint8ArrayToNative(nativeSourceTokenAddress, fromChain);
-  const amount = ethers.BigNumber.from(amountBuff);
-  const recipientWallet = tryUint8ArrayToNative(recipientWalletBuff, toChain);
+  const recipientWalletBytes = Uint8Array.from(
+    payloadArray.subarray(offset, offset + 32)
+  );
+  // offset += 32; // 244
+  const recipientWallet = tryUint8ArrayToNative(recipientWalletBytes, toChain);
 
   return {
-    version,
-    token,
-    amount,
-    nonce,
-    fromDomain,
-    fromChain,
-    toDomain,
-    toChain,
-    nativeSourceTokenAddress,
-    mintRecipient,
-    toNativeAmount,
+    payloadId,
     feeAmount,
+    toNativeAmount,
     recipientWallet,
   };
 }

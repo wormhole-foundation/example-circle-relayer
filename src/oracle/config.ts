@@ -6,7 +6,7 @@ import { Environment } from "@wormhole-foundation/relayer-engine";
 import {
   USDC_ERC20_ADDRESSES_BY_ENV,
   USDC_RELAYER_ADDRESSES,
-} from "../common/const";
+} from "../common/supported-chains.config";
 
 const blockchainEnv = getBlockchainEnv(process.env.BLOCKCHAIN_ENV);
 
