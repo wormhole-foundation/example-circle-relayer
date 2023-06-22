@@ -28,7 +28,7 @@
     "@influxdata/influxdb-client": "^1.33.2",
     "@koa/cors": "^4.0.0",
     "@wormhole-foundation/relayer-engine": "github:wormhole-foundation/relayer-engine#0323c68d3e7bf5f5036bb272c98766bf2b043d80",
-    "@xlabs/relayer-engine-middleware": "^1.0.4",
+    "@xlabs/relayer-engine-middleware": "^1.0.5",
     "ethers": "^5.7.2",
     "ioredis": "^5.3.1",
     "koa": "^2.14.1",

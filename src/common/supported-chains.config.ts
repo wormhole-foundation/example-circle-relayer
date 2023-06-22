@@ -47,7 +47,7 @@ export const CIRCLE_CONTRACT_ADDRESSES: AddressesByEnvAndChain = {
   [Environment.MAINNET]: {
     [CHAIN_ID_ETH]: "0x0a992d191DEeC32aFe36203Ad87D7d289a738F81",
     [CHAIN_ID_AVAX]: "0x8186359af5f57fbb40c6b14a588d2a59c0c29880",
-    [CHAIN_ID_ARBITRUM]: "",
+    [CHAIN_ID_ARBITRUM]: "0xC30362313FBBA5cf9163F0bb16a0e01f01A896ca",
   },
   [Environment.DEVNET]: {},
 };
@@ -81,7 +81,7 @@ export const USDC_WH_SENDER: AddressesByEnvAndChain = {
   [Environment.MAINNET]: {
     [CHAIN_ID_ETH]: "0xaada05bd399372f0b0463744c09113c137636f6a",
     [CHAIN_ID_AVAX]: "0x09fb06a271faff70a651047395aaeb6265265f13",
-    [CHAIN_ID_ARBITRUM]: "0x2e8f5e00a9c5d450a72700546b89e2b70dfb00f2", // wrong, replace
+    [CHAIN_ID_ARBITRUM]: "0x2703483B1a5a7c577e8680de9Df8Be03c6f30e3c",
   },
   [Environment.DEVNET]: {
     [CHAIN_ID_ETH]: "",
