@@ -6,7 +6,7 @@ import * as fs from "fs";
 import yargs from "yargs";
 import { SignerArguments, addSignerArgsParser, getSigner } from "./signer";
 import { Config, SupportedChainId } from "./config";
-import { Check, TxResult, handleFailure } from "./tx";
+import { Check, TxResult, buildOverrides, handleFailure } from "./tx";
 
 interface CustomArguments {
   configPath: string;
@@ -49,7 +49,8 @@ async function registerContract(
   }
 
   // register the emitter
-  const tx = await relayer.registerContract(chainId, contract);
+  const overrides = buildOverrides(RELEASE_CHAIN_ID);
+  const tx = await relayer.registerContract(chainId, contract, overrides);
   const receipt = await tx.wait();
   const successMessage = `Registered chainId=${chainId}, txHash=${receipt.transactionHash}`;
 

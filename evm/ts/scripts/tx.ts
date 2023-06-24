@@ -1,6 +1,7 @@
-import type { ethers } from "ethers";
+import { ethers } from "ethers";
+import { SupportedChainId } from "./config";
 
-export type Check = (() => Promise<string>);
+export type Check = () => Promise<string>;
 
 export class TxResult {
   private constructor(
@@ -22,11 +23,7 @@ export class TxResult {
   }
 }
 
-export function handleFailure(
-  checks: Check[],
-  result: TxResult,
-  failureMessage: string
-) {
+export function handleFailure(checks: Check[], result: TxResult, failureMessage: string) {
   if (result.txSuccess === false) {
     console.log(failureMessage);
   } else {
@@ -34,11 +31,28 @@ export function handleFailure(
   }
 }
 
-async function doCheck(result: TxResult, successMessage: string, failureMessage: string): Promise<string> {
+async function doCheck(
+  result: TxResult,
+  successMessage: string,
+  failureMessage: string
+): Promise<string> {
   const success = await result.check().catch((error) => {
-    failureMessage += `\n ${error?.stack || error}`
+    failureMessage += `\n ${error?.stack || error}`;
     return false;
   });
   if (!success) return failureMessage;
   return successMessage;
+}
+
+export function buildOverrides(
+  chainId: SupportedChainId
+): ethers.Overrides {
+  const overrides: ethers.Overrides = {};
+  if (chainId === 23) {
+    // Arbitrum gas price feeds are excessive on public endpoints too apparently.
+    overrides.type = 2;
+    overrides.maxFeePerGas = ethers.utils.parseUnits("0.2", "gwei");
+    overrides.maxPriorityFeePerGas = 0;
+  }
+  return overrides;
 }

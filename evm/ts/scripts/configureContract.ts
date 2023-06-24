@@ -5,7 +5,7 @@ import { ICircleRelayer, ICircleRelayer__factory } from "../src/ethers-contracts
 import * as fs from "fs";
 import yargs from "yargs";
 import { SignerArguments, addSignerArgsParser, getSigner } from "./signer";
-import { Check, TxResult, handleFailure } from "./tx";
+import { Check, TxResult, buildOverrides, handleFailure } from "./tx";
 import { Config, SupportedChainId } from "./config";
 
 interface CustomArguments {
@@ -73,7 +73,8 @@ async function updateSwapRate(
   const swapRateToUpdate = ethers.BigNumber.from(swapRate);
 
   // update the swap rate
-  const tx = await relayer.updateNativeSwapRate(RELEASE_CHAIN_ID, contract, swapRateToUpdate);
+  const overrides = buildOverrides(RELEASE_CHAIN_ID);
+  const tx = await relayer.updateNativeSwapRate(RELEASE_CHAIN_ID, contract, swapRateToUpdate, overrides);
   const receipt = await tx.wait();
   const successMessage = `Success: swap rate updated, swapRate=${swapRate}, txHash=${receipt.transactionHash}`;
 
@@ -93,7 +94,8 @@ async function updateMaxNativeSwapAmount(
   const maxNativeToUpdate = ethers.BigNumber.from(maxNativeSwapAmount);
 
   // set the max native swap amount
-  const tx = await relayer.updateMaxNativeSwapAmount(RELEASE_CHAIN_ID, contract, maxNativeToUpdate);
+  const overrides = buildOverrides(RELEASE_CHAIN_ID);
+  const tx = await relayer.updateMaxNativeSwapAmount(RELEASE_CHAIN_ID, contract, maxNativeToUpdate, overrides);
   const receipt = await tx.wait();
   const successMessage = `Success: max swap amount updated, token=${contract}, max=${maxNativeSwapAmount}, txHash=${receipt.transactionHash}`;
 
@@ -114,7 +116,8 @@ async function updateRelayerFee(
   const relayerFeeToUpdate = ethers.BigNumber.from(relayerFee);
 
   // update the relayerFee
-  const tx = await relayer.updateRelayerFee(chainId, tokenContract, relayerFeeToUpdate);
+  const overrides = buildOverrides(RELEASE_CHAIN_ID);
+  const tx = await relayer.updateRelayerFee(chainId, tokenContract, relayerFeeToUpdate, overrides);
   const receipt = await tx.wait();
   const successMessage = `Relayer fee updated for chainId=${chainId}, fee=${relayerFee}, txHash=${receipt.transactionHash}`;
 
