@@ -19,6 +19,7 @@ type Arguments = CustomArguments & SignerArguments;
 
 async function parseArgs(): Promise<Arguments> {
   const baseParser = yargs(process.argv.slice(1))
+    .env("CONFIGURE_CCTP")
     .option("setSwapRate", {
       alias: "s",
       string: false,
