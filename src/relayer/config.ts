@@ -37,6 +37,7 @@ const isRedisCluster = !!process.env.REDIS_CLUSTER_ENDPOINTS;
 
 export const config = {
   env: process.env.NODE_ENV || "local",
+  name: process.env.RELAYER_NAME || "CCTPRelayer",
   blockchainEnv: getBlockchainEnv(process.env.BLOCKCHAIN_ENV ?? ""), // TODO validate and parse properly
   logLevel: process.env.LOG_LEVEL || "debug",
   privateKeys: {

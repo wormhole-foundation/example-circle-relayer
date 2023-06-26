@@ -111,7 +111,7 @@ export class CctpRelayer {
     logger.info(
       `Going from ${coalesceChainName(fromChain)} to ${coalesceChainName(
         toChain
-      )}}`
+      )}`
     );
 
     // 1. Make sure we want to process this VAA (going from and to circle domains that we know about, the payload is valid, etc.)
@@ -217,6 +217,7 @@ export class CctpRelayer {
     await ctx.wallets.onEVM(toChain, async (w) => {
       const [_, waitedInNanos] = process.hrtime(startedWaitingForWallet);
       r.metrics.waitingForWalletInMs = nanoToMs(waitedInNanos);
+      logger.info(`Relaying with wallet: ${w.address}`);
       try {
         // redeem parameters for target function call
         const { receipt, waitedForTxInMs } = await this.submitTx(
