@@ -108,6 +108,12 @@ export class CctpRelayer {
       throw new UnrecoverableError("Unknown payload id");
     }
 
+    logger.info(
+      `Going from ${coalesceChainName(fromChain)} to ${coalesceChainName(
+        toChain
+      )}}`
+    );
+
     // 1. Make sure we want to process this VAA (going from and to circle domains that we know about, the payload is valid, etc.)
     const targetRelayerAddress = this.usdcRelayerAddresses[toChain]!;
     if (
@@ -227,6 +233,14 @@ export class CctpRelayer {
         logger.info(
           `Redeemed source transfer: ${ctx.sourceTxHash} in txhash: ${receipt.transactionHash}`
         );
+        const explorerLink = await ctx.linkToExplorerFromTx(
+          toChain,
+          receipt.transactionHash
+        );
+
+        if (explorerLink.length) {
+          logger.info(`See transfer: ${explorerLink}`);
+        }
       } catch (e: any) {
         if (e.error?.reason?.includes("already consumed")) {
           logger.info("Tx failed. This message has already been relayed.");
