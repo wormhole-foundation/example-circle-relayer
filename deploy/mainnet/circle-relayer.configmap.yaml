@@ -8,3 +8,4 @@ data:
   BLOCKCHAIN_ENV: "mainnet"
   SPY_URL: "spy.token-bridge-relayer.svc.cluster.local:7073"
   RELAY_CONCURRENCY: "3"
+  NAME: "CCTPRelayer-new"

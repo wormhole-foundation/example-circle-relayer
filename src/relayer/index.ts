@@ -15,7 +15,7 @@ import {
   explorerLinks,
   ExplorerLinksContext,
 } from "@xlabs/relayer-engine-middleware/lib/explorer-links.middleware";
-import { runAPI } from "@xlabs/relayer-engine-middleware/lib/api";
+import { runAPI } from "@xlabs/relayer-engine-middleware/lib/relayer-api";
 
 import {
   evmOverrides,
@@ -46,7 +46,7 @@ async function main() {
 
   await setupDb({ uri: config.db.uri, database: config.db.database });
   const app = new StandardRelayerApp<CctpRelayerContext>(env, {
-    name: "CCTPRelayer",
+    name: config.name,
     fetchSourceTxhash: true,
     redis: config.redis,
     redisClusterEndpoints: config.redisClusterEndpoints,

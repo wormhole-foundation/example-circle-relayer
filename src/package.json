@@ -1,6 +1,6 @@
 {
   "name": "src",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -28,7 +28,7 @@
     "@influxdata/influxdb-client": "^1.33.2",
     "@koa/cors": "^4.0.0",
     "@wormhole-foundation/relayer-engine": "github:wormhole-foundation/relayer-engine#f04e32c4b8f3ee41666e7117b8cae1be8459a953",
-    "@xlabs/relayer-engine-middleware": "^1.0.5",
+    "@xlabs/relayer-engine-middleware": "^1.0.7",
     "ethers": "^5.7.2",
     "ioredis": "^5.3.1",
     "koa": "^2.14.1",
