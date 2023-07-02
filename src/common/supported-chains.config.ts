@@ -55,14 +55,32 @@ export const CIRCLE_CONTRACT_ADDRESSES: AddressesByEnvAndChain = {
 // USDC relayer contracts. We push the tx to these guys.
 export const USDC_RELAYER_ADDRESSES: AddressesByEnvAndChain = {
   [Environment.TESTNET]: {
-    [CHAIN_ID_ETH]: "0x17da1ff5386d044c63f00747b5b8ad1e3806448d",
-    [CHAIN_ID_AVAX]: "0x774a70bbd03327c21460b60f25b677d9e46ab458",
-    [CHAIN_ID_ARBITRUM]: "0xbf683d541e11320418ca78ec13309938e6c5922f",
+    [CHAIN_ID_ETH]:
+      process.env.ETH_RELAYER_ADDRESS ||
+      process.env.EVM_RELAYER_ADDRESS ||
+      "0x17da1ff5386d044c63f00747b5b8ad1e3806448d",
+    [CHAIN_ID_AVAX]:
+      process.env.AVAX_RELAYER_ADDRESS ||
+      process.env.EVM_RELAYER_ADDRESS ||
+      "0x774a70bbd03327c21460b60f25b677d9e46ab458",
+    [CHAIN_ID_ARBITRUM]:
+      process.env.ARBITRUM_RELAYER_ADDRESS ||
+      process.env.EVM_RELAYER_ADDRESS ||
+      "0xbf683d541e11320418ca78ec13309938e6c5922f",
   },
   [Environment.MAINNET]: {
-    [CHAIN_ID_ETH]: "0x4cb69FaE7e7Af841e44E1A1c30Af640739378bb2",
-    [CHAIN_ID_AVAX]: "0x4cb69FaE7e7Af841e44E1A1c30Af640739378bb2",
-    [CHAIN_ID_ARBITRUM]: "0x4cb69FaE7e7Af841e44E1A1c30Af640739378bb2",
+    [CHAIN_ID_ETH]:
+      process.env.ETH_RELAYER_ADDRESS ||
+      process.env.EVM_RELAYER_ADDRESS ||
+      "0x4cb69FaE7e7Af841e44E1A1c30Af640739378bb2",
+    [CHAIN_ID_AVAX]:
+      process.env.AVAX_RELAYER_ADDRESS ||
+      process.env.EVM_RELAYER_ADDRESS ||
+      "0x4cb69FaE7e7Af841e44E1A1c30Af640739378bb2",
+    [CHAIN_ID_ARBITRUM]:
+      process.env.ARBITRUM_RELAYER_ADDRESS ||
+      process.env.EVM_RELAYER_ADDRESS ||
+      "0x4cb69FaE7e7Af841e44E1A1c30Af640739378bb2",
   },
   [Environment.DEVNET]: {
     [CHAIN_ID_ETH]: "",
