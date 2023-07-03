@@ -7,47 +7,73 @@ export class TxResult {
   private constructor(
     public readonly txSuccess: boolean,
     public readonly successMessage: string,
+    public readonly failureMessage: string,
     public readonly check: () => Promise<boolean>
   ) {}
 
   static create(
     txReceipt: ethers.ContractReceipt,
     successMessage: string,
+    failureMessage: string,
     check: () => Promise<boolean>
   ) {
-    return new TxResult(txReceipt.status === 1, successMessage, check);
+    return new TxResult(txReceipt.status === 1, successMessage, failureMessage, check);
   }
 
   static Success(successMessage: string) {
-    return new TxResult(true, successMessage, async () => true);
+    return new TxResult(true, successMessage, "", async () => true);
   }
 }
 
-export function handleFailure(checks: Check[], result: TxResult, failureMessage: string) {
+export function handleFailure(checks: Check[], result: TxResult) {
   if (result.txSuccess === false) {
-    console.log(failureMessage);
+    console.log(result.failureMessage);
   } else {
-    checks.push(() => doCheck(result, result.successMessage, failureMessage));
+    checks.push(() => doCheck(result));
   }
 }
 
-async function doCheck(
-  result: TxResult,
-  successMessage: string,
-  failureMessage: string
-): Promise<string> {
+async function doCheck(result: TxResult): Promise<string> {
+  let failureMessage = result.failureMessage;
   const success = await result.check().catch((error) => {
     failureMessage += `\n ${error?.stack || error}`;
     return false;
   });
   if (!success) return failureMessage;
-  return successMessage;
+  return result.successMessage;
 }
 
-export function buildOverrides(
+async function estimateGasDeploy(
+  factory: ethers.ContractFactory,
+  args: unknown[]
+): Promise<ethers.BigNumber> {
+  const deployTxArgs = factory.getDeployTransaction(...args);
+  return factory.signer.estimateGas(deployTxArgs);
+}
+
+export async function buildOverridesDeploy(
+  factory: ethers.ContractFactory,
+  chainId: SupportedChainId,
+  args: unknown[]
+): Promise<ethers.Overrides> {
+  return buildOverrides(() => estimateGasDeploy(factory, args), chainId);
+}
+
+async function overshootEstimationGas(
+  estimate: () => Promise<ethers.BigNumber>
+): Promise<ethers.BigNumber> {
+  const gasEstimate = await estimate();
+  // we multiply gas estimation by a factor 1.1 to avoid slightly skewed estimations from breaking transactions.
+  return gasEstimate.mul(1100).div(1000);
+}
+
+export async function buildOverrides(
+  estimate: () => Promise<ethers.BigNumber>,
   chainId: SupportedChainId
-): ethers.Overrides {
-  const overrides: ethers.Overrides = {};
+): Promise<ethers.Overrides> {
+  const overrides: ethers.Overrides = {
+    gasLimit: await overshootEstimationGas(estimate),
+  };
   if (chainId === 23) {
     // Arbitrum gas price feeds are excessive on public endpoints too apparently.
     overrides.type = 2;

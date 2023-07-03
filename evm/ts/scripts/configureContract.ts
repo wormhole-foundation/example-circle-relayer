@@ -3,10 +3,9 @@ import { RELEASE_CHAIN_ID, RELEASE_RPC } from "./consts";
 import { tryHexToNativeString } from "@certusone/wormhole-sdk";
 import { ICircleRelayer, ICircleRelayer__factory } from "../src/ethers-contracts";
 import * as fs from "fs";
-import yargs from "yargs";
 import { SignerArguments, addSignerArgsParser, getSigner } from "./signer";
 import { Check, TxResult, buildOverrides, handleFailure } from "./tx";
-import { Config, SupportedChainId } from "./config";
+import { Config, SupportedChainId, configArgsParser, isChain } from "./config";
 
 interface CustomArguments {
   setSwapRate: boolean;
@@ -18,8 +17,7 @@ interface CustomArguments {
 type Arguments = CustomArguments & SignerArguments;
 
 async function parseArgs(): Promise<Arguments> {
-  const baseParser = yargs(process.argv.slice(1))
-    .env("CONFIGURE_CCTP")
+  const parser = addSignerArgsParser(configArgsParser())
     .option("setSwapRate", {
       alias: "s",
       string: false,
@@ -40,17 +38,7 @@ async function parseArgs(): Promise<Arguments> {
       boolean: true,
       description: "Toggle for setting max native swap amount",
       required: true,
-    })
-    .option("config", {
-      alias: "c",
-      string: true,
-      boolean: false,
-      description: "Configuration filepath.",
-      required: true,
-    })
-    .help("h")
-    .alias("h", "help");
-  const parser = addSignerArgsParser(baseParser);
+    });
   const parsed = await parser.argv;
 
   const args: Arguments = {
@@ -70,19 +58,21 @@ async function updateSwapRate(
   contract: string,
   swapRate: ethers.BigNumberish
 ): Promise<TxResult> {
-  // convert swap rate into BigNumber
-  const swapRateToUpdate = ethers.BigNumber.from(swapRate);
-
-  // update the swap rate
-  const overrides = buildOverrides(RELEASE_CHAIN_ID);
-  const tx = await relayer.updateNativeSwapRate(RELEASE_CHAIN_ID, contract, swapRateToUpdate, overrides);
+  // Builds tx overrides according to operating chain
+  const overrides = await buildOverrides(
+    () => relayer.estimateGas.updateNativeSwapRate(RELEASE_CHAIN_ID, contract, swapRate),
+    RELEASE_CHAIN_ID
+  );
+  const tx = await relayer.updateNativeSwapRate(RELEASE_CHAIN_ID, contract, swapRate, overrides);
+  console.log(`Swap rate update tx sent, swapRate=${swapRate}, txHash=${tx.hash}`);
   const receipt = await tx.wait();
-  const successMessage = `Success: swap rate updated, swapRate=${swapRate}, txHash=${receipt.transactionHash}`;
 
-  return TxResult.create(receipt, successMessage, async () => {
+  const successMessage = `Success: swap rate updated, swapRate=${swapRate}, txHash=${receipt.transactionHash}`;
+  const failureMessage = `Failed: could not update swap rates, token=${contract}`;
+  return TxResult.create(receipt, successMessage, failureMessage, async () => {
     // query the contract and see if the token swap rate was set properly
     const swapRateInContract = await relayer.nativeSwapRate(contract);
-    return swapRateInContract.eq(swapRateToUpdate);
+    return swapRateInContract.eq(swapRate);
   });
 }
 
@@ -91,41 +81,56 @@ async function updateMaxNativeSwapAmount(
   contract: string,
   maxNativeSwapAmount: ethers.BigNumberish
 ): Promise<TxResult> {
-  // convert max native into BigNumber
-  const maxNativeToUpdate = ethers.BigNumber.from(maxNativeSwapAmount);
-
-  // set the max native swap amount
-  const overrides = buildOverrides(RELEASE_CHAIN_ID);
-  const tx = await relayer.updateMaxNativeSwapAmount(RELEASE_CHAIN_ID, contract, maxNativeToUpdate, overrides);
+  // Builds tx overrides according to operating chain
+  const overrides = await buildOverrides(
+    () =>
+      relayer.estimateGas.updateMaxNativeSwapAmount(
+        RELEASE_CHAIN_ID,
+        contract,
+        maxNativeSwapAmount
+      ),
+    RELEASE_CHAIN_ID
+  );
+  const tx = await relayer.updateMaxNativeSwapAmount(
+    RELEASE_CHAIN_ID,
+    contract,
+    maxNativeSwapAmount,
+    overrides
+  );
+  console.log(
+    `Max swap amount update tx sent, token=${contract}, max=${maxNativeSwapAmount}, txHash=${tx.hash}`
+  );
   const receipt = await tx.wait();
-  const successMessage = `Success: max swap amount updated, token=${contract}, max=${maxNativeSwapAmount}, txHash=${receipt.transactionHash}`;
 
-  return TxResult.create(receipt, successMessage, async () => {
+  const successMessage = `Success: max swap amount updated, token=${contract}, max=${maxNativeSwapAmount}, txHash=${receipt.transactionHash}`;
+  const failureMessage = `Failed: could not update max native swap amount, token=${contract}`;
+  return TxResult.create(receipt, successMessage, failureMessage, async () => {
     // query the contract and see if the max native swap amount was set correctly
     const maxNativeInContract = await relayer.maxNativeSwapAmount(contract);
-    return maxNativeInContract.eq(maxNativeToUpdate);
+    return maxNativeInContract.eq(maxNativeSwapAmount);
   });
 }
 
 async function updateRelayerFee(
   relayer: ICircleRelayer,
-  chainId: number,
+  chainId: SupportedChainId,
   tokenContract: string,
   relayerFee: ethers.BigNumberish
 ): Promise<TxResult> {
-  // convert USD fee to a BigNumber
-  const relayerFeeToUpdate = ethers.BigNumber.from(relayerFee);
-
-  // update the relayerFee
-  const overrides = buildOverrides(RELEASE_CHAIN_ID);
-  const tx = await relayer.updateRelayerFee(chainId, tokenContract, relayerFeeToUpdate, overrides);
+  // Builds tx overrides according to operating chain
+  const overrides = await buildOverrides(
+    () => relayer.estimateGas.updateRelayerFee(chainId, tokenContract, relayerFee),
+    RELEASE_CHAIN_ID
+  );
+  const tx = await relayer.updateRelayerFee(chainId, tokenContract, relayerFee, overrides);
   const receipt = await tx.wait();
-  const successMessage = `Relayer fee updated for chainId=${chainId}, fee=${relayerFee}, txHash=${receipt.transactionHash}`;
 
-  return TxResult.create(receipt, successMessage, async () => {
+  const successMessage = `Relayer fee updated for chainId=${chainId}, fee=${relayerFee}, txHash=${receipt.transactionHash}`;
+  const failureMessage = `Failed: could not update the relayer fee, token=${tokenContract}, chain=${chainId}`;
+  return TxResult.create(receipt, successMessage, failureMessage, async () => {
     // query the contract and see if the relayer fee was set properly
     const relayerFeeInContract = await relayer.relayerFee(chainId, tokenContract);
-    return relayerFeeInContract.eq(relayerFeeToUpdate);
+    return relayerFeeInContract.eq(relayerFee);
   });
 }
 
@@ -162,9 +167,7 @@ async function main() {
     // set the token -> USD swap rate
     if (args.setSwapRate) {
       const result = await updateSwapRate(relayer, formattedAddress, token.nativeSwapRate);
-
-      const failureMessage = `Failed: could not update swap rates, token=${formattedAddress}`;
-      handleFailure(checks, result, failureMessage);
+      handleFailure(checks, result);
     }
 
     // set max native swap amount for each token
@@ -174,24 +177,23 @@ async function main() {
         formattedAddress,
         token.maxNativeSwapAmount
       );
-
-      const failureMessage = `Failed: could not update max native swap amount, token=${formattedAddress}`;
-      handleFailure(checks, result, failureMessage);
+      handleFailure(checks, result);
     }
 
     // update relayer fee for each chainId
     if (args.setRelayerFee) {
       for (const [chainId, fees] of Object.entries(outboundRelayerFees)) {
-        const parsedChainId = Number(chainId) as SupportedChainId;
+        const parsedChainId = Number(chainId);
+        if (!isChain(parsedChainId)) {
+          throw new Error(`Unknown wormhole chain id ${parsedChainId}`);
+        }
         // skip the release chain id
         if (parsedChainId === RELEASE_CHAIN_ID) {
           continue;
         }
 
         const result = await updateRelayerFee(relayer, parsedChainId, formattedAddress, fees);
-
-        const failureMessage = `Failed: could not update the relayer fee, token=${formattedAddress}, chain=${chainId}`;
-        handleFailure(checks, result, failureMessage);
+        handleFailure(checks, result);
       }
     }
   }

@@ -1,11 +1,10 @@
 import { ethers } from "ethers";
-import { RELEASE_CHAIN_ID, RELEASE_RPC, WALLET_PRIVATE_KEY, ZERO_BYTES32 } from "./consts";
-import { tryHexToNativeString, ChainId } from "@certusone/wormhole-sdk";
+import { RELEASE_CHAIN_ID, RELEASE_RPC, ZERO_BYTES32 } from "./consts";
+import { tryHexToNativeString } from "@certusone/wormhole-sdk";
 import { ICircleRelayer, ICircleRelayer__factory } from "../src/ethers-contracts";
 import * as fs from "fs";
-import yargs from "yargs";
 import { SignerArguments, addSignerArgsParser, getSigner } from "./signer";
-import { Config, SupportedChainId } from "./config";
+import { Config, SupportedChainId, configArgsParser, isChain } from "./config";
 import { Check, TxResult, buildOverrides, handleFailure } from "./tx";
 
 interface CustomArguments {
@@ -15,18 +14,7 @@ interface CustomArguments {
 type Arguments = CustomArguments & SignerArguments;
 
 async function parseArgs(): Promise<Arguments> {
-  const baseParser = yargs(process.argv.slice(1))
-    .env("CONFIGURE_CCTP")
-    .option("config", {
-      alias: "c",
-      string: true,
-      boolean: false,
-      description: "Configuration filepath.",
-      required: true,
-    })
-    .help("h")
-    .alias("h", "help");
-  const parser = addSignerArgsParser(baseParser);
+  const parser = addSignerArgsParser(configArgsParser());
   const parsed = await parser.argv;
 
   const args: Arguments = {
@@ -50,12 +38,17 @@ async function registerContract(
   }
 
   // register the emitter
-  const overrides = buildOverrides(RELEASE_CHAIN_ID);
+  const overrides = await buildOverrides(
+    () => relayer.estimateGas.registerContract(chainId, contract),
+    RELEASE_CHAIN_ID
+  );
   const tx = await relayer.registerContract(chainId, contract, overrides);
+  console.log(`Register tx sent chainId=${chainId}, txHash=${tx.hash}`);
   const receipt = await tx.wait();
-  const successMessage = `Registered chainId=${chainId}, txHash=${receipt.transactionHash}`;
 
-  return TxResult.create(receipt, successMessage, async () => {
+  const successMessage = `Registered chainId=${chainId}, txHash=${receipt.transactionHash}`;
+  const failureMessage = `Failed to register chain=${chainId}`;
+  return TxResult.create(receipt, successMessage, failureMessage, async () => {
     // query the contract and confirm that the emitter is set in storage
     const emitterInContractState: ethers.BytesLike = await relayer.getRegisteredContract(chainId);
 
@@ -81,11 +74,12 @@ async function main() {
   // setup relayer contract
   const relayer = ICircleRelayer__factory.connect(relayerAddress, wallet);
 
-  const checks: Check[] = []
-
-  // loop through configured contracts and register them one at a time
+  const checks: Check[] = [];
   for (const [chainId_, contract] of Object.entries(contracts)) {
-    const chainIdToRegister = Number(chainId_) as SupportedChainId;
+    const chainIdToRegister = Number(chainId_);
+    if (!isChain(chainIdToRegister)) {
+      throw new Error(`Unknown wormhole chain id ${chainIdToRegister}`);
+    }
     // skip this chain
     if (chainIdToRegister === RELEASE_CHAIN_ID) {
       continue;
@@ -95,9 +89,7 @@ async function main() {
     const formattedAddress = ethers.utils.arrayify("0x" + contract);
 
     const result = await registerContract(relayer, chainIdToRegister, formattedAddress);
-    const failureMessage = `Failed to register chain=${chainId_}`;
-
-    handleFailure(checks, result, failureMessage)
+    handleFailure(checks, result);
   }
 
   const messages = (await Promise.all(checks.map((check) => check()))).join("\n");
