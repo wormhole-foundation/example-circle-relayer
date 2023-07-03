@@ -23,8 +23,7 @@ export function addSignerArgsParser<T>(parser: yargs.Argv<T>) {
     .option("derivation-path", {
       string: true,
       boolean: false,
-      description:
-        "BIP32 derivation path to use. Used only with ledger devices.",
+      description: "BIP32 derivation path to use. Used only with ledger devices.",
       required: false,
     });
 }
@@ -34,9 +33,7 @@ export function addSignerArgsParser<T>(parser: yargs.Argv<T>) {
  * the option of using a ledger hardware wallet.
  */
 export async function parseSignerArgs(): Promise<SignerArguments> {
-  const signerArgsParser = addSignerArgsParser(yargs())
-    .help("h")
-    .alias("h", "help");
+  const signerArgsParser = addSignerArgsParser(yargs()).help("h").alias("h", "help");
   const parsed = await signerArgsParser.parse(hideBin(process.argv));
 
   const args: SignerArguments = {
