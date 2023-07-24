@@ -191,7 +191,7 @@ async function main() {
         if (!isChain(parsedChainId)) {
           throw new Error(`Unknown wormhole chain id ${parsedChainId}`);
         }
-        // skip the release chain id
+        // skip the chain on which we're signing txs
         if (parsedChainId === RELEASE_CHAIN_ID) {
           continue;
         }

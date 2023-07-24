@@ -84,7 +84,7 @@ async function main() {
     if (!isChain(chainIdToRegister)) {
       throw new Error(`Unknown wormhole chain id ${chainIdToRegister}`);
     }
-    // skip this chain
+    // skip the chain on which we're signing txs
     if (chainIdToRegister === RELEASE_CHAIN_ID) {
       continue;
     }
