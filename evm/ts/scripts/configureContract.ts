@@ -4,7 +4,7 @@ import { tryHexToNativeString } from "@certusone/wormhole-sdk";
 import { ICircleRelayer, ICircleRelayer__factory } from "../src/ethers-contracts";
 import * as fs from "fs";
 import { SignerArguments, addSignerArgsParser, getSigner } from "./signer";
-import { Check, TxResult, buildOverrides, handleFailure } from "./tx";
+import { Check, TxResult, buildOverrides, executeChecks, handleFailure } from "./tx";
 import { Config, SupportedChainId, configArgsParser, isChain, isOperatingChain } from "./config";
 
 interface CustomArguments {
@@ -202,7 +202,7 @@ async function main() {
     }
   }
 
-  const messages = (await Promise.all(checks.map((check) => check()))).join("\n");
+  const messages = await executeChecks(checks);
   console.log(messages);
 }
 

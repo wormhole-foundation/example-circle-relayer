@@ -5,7 +5,7 @@ import { ICircleRelayer, ICircleRelayer__factory } from "../src/ethers-contracts
 import * as fs from "fs";
 import { SignerArguments, addSignerArgsParser, getSigner } from "./signer";
 import { Config, SupportedChainId, configArgsParser, isChain, isOperatingChain } from "./config";
-import { Check, TxResult, buildOverrides, handleFailure } from "./tx";
+import { Check, TxResult, buildOverrides, executeChecks, handleFailure } from "./tx";
 
 interface CustomArguments {
   configPath: string;
@@ -91,12 +91,11 @@ async function main() {
 
     // format the address and register the chain
     const formattedAddress = ethers.utils.arrayify("0x" + contract);
-
     const result = await registerContract(relayer, chainIdToRegister, formattedAddress);
     handleFailure(checks, result);
   }
 
-  const messages = (await Promise.all(checks.map((check) => check()))).join("\n");
+  const messages = await executeChecks(checks);
   console.log(messages);
 }
 
