@@ -4,7 +4,7 @@ import { tryHexToNativeString } from "@certusone/wormhole-sdk";
 import { ICircleRelayer, ICircleRelayer__factory } from "../src/ethers-contracts";
 import * as fs from "fs";
 import { SignerArguments, addSignerArgsParser, getSigner } from "./signer";
-import { Config, SupportedChainId, configArgsParser, isChain } from "./config";
+import { Config, SupportedChainId, configArgsParser, isChain, isOperatingChain } from "./config";
 import { Check, TxResult, buildOverrides, handleFailure } from "./tx";
 
 interface CustomArguments {
@@ -63,6 +63,10 @@ async function main() {
   const { deployedContracts: contracts } = JSON.parse(
     fs.readFileSync(args.configPath, "utf8")
   ) as Config;
+
+  if (!isOperatingChain(RELEASE_CHAIN_ID)) {
+    throw new Error(`Transaction signing unsupported for wormhole chain id ${RELEASE_CHAIN_ID}`);
+  }
 
   // setup ethers wallet
   const provider = new ethers.providers.StaticJsonRpcProvider(RELEASE_RPC);

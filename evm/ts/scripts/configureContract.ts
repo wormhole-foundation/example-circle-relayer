@@ -5,7 +5,7 @@ import { ICircleRelayer, ICircleRelayer__factory } from "../src/ethers-contracts
 import * as fs from "fs";
 import { SignerArguments, addSignerArgsParser, getSigner } from "./signer";
 import { Check, TxResult, buildOverrides, handleFailure } from "./tx";
-import { Config, SupportedChainId, configArgsParser, isChain } from "./config";
+import { Config, SupportedChainId, configArgsParser, isChain, isOperatingChain } from "./config";
 
 interface CustomArguments {
   setSwapRate: boolean;
@@ -141,6 +141,10 @@ async function main() {
   const { deployedContracts: contracts, acceptedTokens: setupConfig } = JSON.parse(
     fs.readFileSync(args.configPath, "utf8")
   ) as Config;
+
+  if (!isOperatingChain(RELEASE_CHAIN_ID)) {
+    throw new Error(`Transaction signing unsupported for wormhole chain id ${RELEASE_CHAIN_ID}`);
+  }
 
   // set up ethers wallet
   const provider = new ethers.providers.StaticJsonRpcProvider(RELEASE_RPC);
