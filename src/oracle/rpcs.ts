@@ -7,6 +7,7 @@ import {
   CHAIN_ID_FANTOM,
   CHAIN_ID_MOONBEAM,
   CHAIN_ID_POLYGON,
+  CHAIN_ID_ARBITRUM,
 } from "@certusone/wormhole-sdk";
 import { Environment } from "@wormhole-foundation/relayer-engine";
 
@@ -32,6 +33,9 @@ const mainnetRpcs = {
   [CHAIN_ID_MOONBEAM]: new ethers.providers.JsonRpcProvider(
     process.env.MOONBEAM_RPC_HTTP ?? "https://rpc.api.moonbeam.network"
   ),
+  [CHAIN_ID_ARBITRUM]: new ethers.providers.JsonRpcProvider(
+    process.env.ARBITRUM_RPC_HTTP ?? "https://arb1.arbitrum.io/rpc"
+  ),
 };
 
 const testnetRpcs = {
@@ -56,6 +60,9 @@ const testnetRpcs = {
   ),
   [CHAIN_ID_MOONBEAM]: new ethers.providers.JsonRpcProvider(
     process.env.MOONBEAM_RPC_HTTP ?? "https://rpc.testnet.moonbeam.network"
+  ),
+  [CHAIN_ID_ARBITRUM]: new ethers.providers.JsonRpcProvider(
+    process.env.ARBITRUM_RPC_HTTP ?? "https://arbitrum-goerli.public.blastapi.io"
   ),
 };
 
