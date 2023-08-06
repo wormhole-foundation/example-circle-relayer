@@ -1,6 +1,6 @@
 {
   "name": "src",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -23,7 +23,7 @@
   "keywords": [],
   "author": "Gabriel Zimmermann",
   "dependencies": {
-    "@certusone/wormhole-sdk": "^0.9.14",
+    "@certusone/wormhole-sdk": "^0.9.22",
     "@improbable-eng/grpc-web-node-http-transport": "^0.15.0",
     "@influxdata/influxdb-client": "^1.33.2",
     "@koa/cors": "^4.0.0",
