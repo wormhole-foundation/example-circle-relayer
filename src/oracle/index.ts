@@ -12,6 +12,14 @@ import {
 import { getLogger } from "../common/logging";
 import { ethers } from "ethers";
 import { ChainId, coalesceChainName } from "@certusone/wormhole-sdk";
+import { PrometheusExporter } from "./metrics";
+import { Registry } from "prom-client";
+import Router from "koa-router";
+import Koa from "koa";
+
+const metricsExporter = new PrometheusExporter(new Registry());
+
+const logger = getLogger(config.env, config.logLevel);
 
 async function sleepFor(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -42,10 +50,7 @@ async function main() {
     minPriceChangePercentage,
     maxPriceChangePercentage,
     fetchPricesIntervalMs,
-    env,
-    logLevel,
   } = config;
-  const logger = getLogger(env, logLevel);
   // create coingeckoId string
   const coingeckoIds = getCoingeckoTokens(SUPPORTED_CHAINS);
   logger.info(`Coingecko Id string: ${coingeckoIds}`);
@@ -66,6 +71,7 @@ async function main() {
 
     if (coingeckoPrices === null) {
       logger.error("Failed to fetch coingecko prices!");
+      metricsExporter.updatePriceProviderFailure("coingecko");
       await sleepFor(fetchPricesIntervalMs);
       continue;
     }
@@ -78,8 +84,10 @@ async function main() {
     let updates = 0;
     // update contract prices
     for (const chainIdStr of SUPPORTED_CHAINS) {
+      const chainId = Number(chainIdStr) as SupportedChainId;
+      const chainName = coalesceChainName(chainId);
+
       try {
-        const chainId = Number(chainIdStr) as SupportedChainId;
         const tokenAddress = config.usdcAddresses[chainId];
 
         // fetch the relayer contract instance
@@ -114,6 +122,7 @@ async function main() {
           `Price update, chainId: ${chainId}, token: ${tokenAddress}, currentPrice: ${currentPrice}, newPrice: ${newPrice}`
         );
 
+        metricsExporter.updatePriceUpdateAttempts(chainName, "cctp-relayer")
         const tx = await relayer.updateNativeSwapRate(
           chainId,
           tokenAddress,
@@ -130,6 +139,7 @@ async function main() {
           )}`,
           e
         );
+        metricsExporter.updatePriceUpdateFailure(chainName, "cctp-relayer");
       }
     }
     if (updates === 0) {
@@ -162,4 +172,23 @@ function makeNativeCurrencyPrices(
   return priceUpdates;
 }
 
+function runAPI(port: any) {
+  const app = new Koa();
+  const router = new Router();
+
+  router.get(`/metrics`, async (ctx) => {
+    ctx.body = await metricsExporter.metrics();
+  });
+
+  app.use(router.routes());
+  app.use(router.allowedMethods());
+
+  port = Number(port) || 3500;
+  app.listen(port, () => {
+    logger.info(`Running metrics server on ${port}...`);
+    logger.info(`Open http://localhost:${port}/metrics`);
+  });
+}
+
 main();
+runAPI(config.api.port);
