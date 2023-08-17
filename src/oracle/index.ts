@@ -122,7 +122,6 @@ async function main() {
           `Price update, chainId: ${chainId}, token: ${tokenAddress}, currentPrice: ${currentPrice}, newPrice: ${newPrice}`
         );
 
-        metricsExporter.updatePriceUpdateAttempts(chainName, "cctp-relayer")
         const tx = await relayer.updateNativeSwapRate(
           chainId,
           tokenAddress,
@@ -132,6 +131,7 @@ async function main() {
         logger.info(
           `Updated native price on chainId: ${chainId}, token: ${tokenAddress}, txhash: ${receipt.transactionHash}`
         );
+        metricsExporter.updatePriceUpdateAttempts({chainName, failure: false, strategy: "cctp-relayer"});
       } catch (e) {
         logger.error(
           `Error processing price update for chain: ${coalesceChainName(
@@ -139,7 +139,7 @@ async function main() {
           )}`,
           e
         );
-        metricsExporter.updatePriceUpdateFailure(chainName, "cctp-relayer");
+        metricsExporter.updatePriceUpdateAttempts({chainName, failure: true, strategy: "cctp-relayer"});
       }
     }
     if (updates === 0) {

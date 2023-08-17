@@ -13,16 +13,7 @@ function registerPriceUpdateAttempts(registry: Registry) {
   return new Counter({
     name: "price_update_attempts",
     help: "Number of times a contract call has attempted to update prices",
-    labelNames: ["chain_name", "strategy"],
-    registers: [registry],
-  });
-}
-
-function registerPriceUpdateFailure(registry: Registry) {
-  return new Counter({
-    name: "price_update_failure",
-    help: "Number of times a contract call has failed to update prices",
-    labelNames: ["chain_name", "strategy"],
+    labelNames: ["chain_name", "status", "strategy"],
     registers: [registry],
   });
 }
@@ -30,7 +21,6 @@ function registerPriceUpdateFailure(registry: Registry) {
 export class PrometheusExporter {
   private priceProviderFailureCounter: Counter;
   private priceUpdateAttemptsCounter: Counter;
-  private priceUpdateFailureCounter: Counter;
 
   private registry: Registry;
 
@@ -43,7 +33,6 @@ export class PrometheusExporter {
     this.priceUpdateAttemptsCounter = registerPriceUpdateAttempts(
       this.registry
     );
-    this.priceUpdateFailureCounter = registerPriceUpdateFailure(this.registry);
   }
 
   public metrics() {
@@ -54,11 +43,15 @@ export class PrometheusExporter {
     this.priceProviderFailureCounter.inc({ provider });
   }
 
-  public updatePriceUpdateAttempts(chainId: string, strategy: string) {
-    this.priceUpdateAttemptsCounter.inc({ chain_name: chainId, strategy });
-  }
-
-  public updatePriceUpdateFailure(chainId: string, strategy: string) {
-    this.priceUpdateFailureCounter.inc({ chain_name: chainId, strategy });
+  public updatePriceUpdateAttempts(params: {
+    chainName: string;
+    failure: boolean;
+    strategy: string;
+  }) {
+    this.priceUpdateAttemptsCounter.inc({
+      chain_name: params.chainName,
+      status: params.failure ? "failed" : "success",
+      strategy: params.strategy,
+    });
   }
 }
