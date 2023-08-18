@@ -76,6 +76,9 @@ export const config = {
   relayerContractAddresses: USDC_RELAYER_ADDRESSES,
   usdcAddresses: USDC_ERC20_ADDRESSES_BY_ENV[blockchainEnv],
   signers: SIGNERS,
+  api: {
+    port: Number(process.env.ORACLE_API_PORT) || 3500,
+  },
 };
 
 export function getBlockchainEnv(env?: string): Environment {
