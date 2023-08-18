@@ -13,7 +13,7 @@ function registerPriceUpdateAttempts(registry: Registry) {
   return new Counter({
     name: "price_update_attempts",
     help: "Number of times a contract call has attempted to update prices",
-    labelNames: ["chain_name", "status", "strategy"],
+    labelNames: ["chain_name", "status"],
     registers: [registry],
   });
 }
@@ -46,12 +46,10 @@ export class PrometheusExporter {
   public updatePriceUpdateAttempts(params: {
     chainName: string;
     failure: boolean;
-    strategy: string;
   }) {
     this.priceUpdateAttemptsCounter.inc({
       chain_name: params.chainName,
       status: params.failure ? "failed" : "success",
-      strategy: params.strategy,
     });
   }
 }

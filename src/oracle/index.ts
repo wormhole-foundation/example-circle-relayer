@@ -131,7 +131,7 @@ async function main() {
         logger.info(
           `Updated native price on chainId: ${chainId}, token: ${tokenAddress}, txhash: ${receipt.transactionHash}`
         );
-        metricsExporter.updatePriceUpdateAttempts({chainName, failure: false, strategy: "cctp-relayer"});
+        metricsExporter.updatePriceUpdateAttempts({chainName, failure: false });
       } catch (e) {
         logger.error(
           `Error processing price update for chain: ${coalesceChainName(
@@ -139,7 +139,7 @@ async function main() {
           )}`,
           e
         );
-        metricsExporter.updatePriceUpdateAttempts({chainName, failure: true, strategy: "cctp-relayer"});
+        metricsExporter.updatePriceUpdateAttempts({chainName, failure: true });
       }
     }
     if (updates === 0) {
