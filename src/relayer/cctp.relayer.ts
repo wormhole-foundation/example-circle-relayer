@@ -169,11 +169,9 @@ export class CctpRelayer {
     const sourceReceipt = await ctx.providers.evm[
       emitterChain
     ]![0].getTransactionReceipt(ctx.sourceTxHash!);
-    const logs = await ctx.cctp.fetchLogAndAttestation(
-      fromDomain,
-      sourceReceipt,
-      { nonce: BigInt(payload.nonce) }
-    );
+    const logs = await ctx.cctp.fetchAttestedLogs(fromDomain, sourceReceipt, {
+      nonce: BigInt(payload.nonce),
+    });
     if (!logs.length) {
       throw new Error(`Error finding circle log for tx`);
     }
