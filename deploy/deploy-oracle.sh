@@ -15,5 +15,7 @@ elif [[ "$1" == "--mainnet" ]]; then
     kubetpl render ./circle-oracle.deployment.yaml -s AWS_ACCOUNT="$AWS_ACCOUNT_PRODUCTION" -s TAG="$2" | kubectl apply -f -
 else
     echo "Invalid argument. Please use --testnet or --mainnet. and the tag as a positional parameter. Example: ./deploy.sh --testnet 2.0.1"
+    exit 1
 fi
 
+kubectl apply -f circle-oracle.service.yaml

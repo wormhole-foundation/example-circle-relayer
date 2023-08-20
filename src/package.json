@@ -36,6 +36,7 @@
     "koa-router": "^12.0.0",
     "mongodb": "5.2.0",
     "node-redis": "^0.1.7",
+    "prom-client": "^14.2.0",
     "typeorm": "^0.3.15",
     "typescript": "^4.9.5",
     "winston": "^3.8.2"
