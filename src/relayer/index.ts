@@ -21,10 +21,12 @@ import {
   evmOverrides,
   EvmOverridesContext,
 } from "@xlabs/relayer-engine-middleware/lib/override.middleware";
+import { cctp, CctpContext } from "@xlabs/cctp-middleware/lib";
 
 export type CctpRelayerContext = StandardRelayerContext &
   ExplorerLinksContext &
   EvmOverridesContext &
+  CctpContext &
   DataContext;
 async function main() {
   const env = config.blockchainEnv;
@@ -63,6 +65,7 @@ async function main() {
   app.use(explorerLinks());
   app.use(evmOverrides());
   // End custom xlabs middleware
+  app.use(cctp());
 
   app.use(storeRelays(app, logger));
 

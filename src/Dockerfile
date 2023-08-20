@@ -10,17 +10,18 @@ fs.writeFileSync('package.json', JSON.stringify({ ...pkg, version: '0.0.0' }));\
 fs.writeFileSync('package-lock.json', JSON.stringify({ ...pkgLock, version: '0.0.0' }));\
 "]
 
-FROM node:19.5.0 as builder
+FROM node:18.17.1 as builder
 WORKDIR /usr/src/app
 COPY --from=preparation --chown=node:node package.json package-lock.json ./
-RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm pkg delete scripts.prepare && npm ci
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm pkg delete scripts.prepare && npm i
 COPY --chown=node:node . .
 RUN npm run build
 
-FROM node:lts-alpine3.17 as final
+FROM node:lts-alpine3.18 as final
 WORKDIR /usr/src/app
-COPY --chown=node:node --from=builder /usr/src/app/build /usr/src/app/package*.json ./
-RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm pkg delete scripts.prepare && npm ci --omit=dev
+COPY --from=preparation --chown=node:node package.json package-lock.json ./
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm pkg delete scripts.prepare && npm i --omit=dev
+COPY --chown=node:node --from=builder /usr/src/app/build ./
 USER node
 EXPOSE 3000
 CMD ["node", "relayer/index.js"]

@@ -30,8 +30,7 @@ import {
 } from "@certusone/wormhole-sdk";
 import { RelayPoint } from "./relay.metrics";
 import { ethers } from "ethers";
-import { formatEther, formatUnits } from "ethers/lib/utils";
-import { USDC_DECIMALS } from "../common/supported-chains.config";
+import { formatEther } from "ethers/lib/utils";
 
 export enum RelayStatus {
   REDEEMED = "redeemed",

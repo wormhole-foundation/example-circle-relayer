@@ -21,7 +21,6 @@ import {
   tryUint8ArrayToNative,
   uint8ArrayToHex,
 } from "@certusone/wormhole-sdk";
-import { handleCircleMessageInLogs } from "./circle.api";
 import { CctpRelayerContext } from "./index";
 import {
   Environment,
@@ -170,18 +169,15 @@ export class CctpRelayer {
     const sourceReceipt = await ctx.providers.evm[
       emitterChain
     ]![0].getTransactionReceipt(ctx.sourceTxHash!);
-
-    logger.debug("Fetching Circle attestation");
-    const { circleMessage, attestation } = await handleCircleMessageInLogs(
-      this.env,
-      sourceReceipt.logs,
-      this.circleAddresses[fromChain]!,
-      fromChain,
-      logger
+    const logs = await ctx.cctp.fetchLogAndAttestation(
+      fromDomain,
+      sourceReceipt,
+      { nonce: BigInt(payload.nonce) }
     );
-    if (circleMessage === null || attestation === null) {
-      throw new Error(`Error parsing receipt, txhash: ${ctx.sourceTxHash}`);
+    if (!logs.length) {
+      throw new Error(`Error finding circle log for tx`);
     }
+    const { message: circleMessage, attestation } = logs[0];
 
     job.updateProgress(70);
     // keep metrics
