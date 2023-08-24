@@ -28,6 +28,10 @@ export type CctpRelayerContext = StandardRelayerContext &
   EvmOverridesContext &
   CctpContext &
   DataContext;
+
+// based on the attempts, returns an exponential backoff in ms
+const second = 1_000;
+const minute = 60 * second;
 async function main() {
   const env = config.blockchainEnv;
   const logger = getLogger(config.env, config.logLevel);
@@ -57,6 +61,13 @@ async function main() {
     concurrency: 5,
     privateKeys: config.privateKeys,
     logger,
+    workflows: {
+      retries: 10,
+    },
+    retryBackoffOptions: {
+      maxDelayMs: 10 * minute,
+      baseDelayMs: 2_000,
+    },
   });
 
   // Custom xlabs middleware: https://github.com/XLabs/relayer-engine-middleware

@@ -1,0 +1,9 @@
+cfg/
+env/
+forge-scripts/
+forge-test/
+modules/
+shell-scripts/
+src/
+foundry*.toml
+Makefile

@@ -1,6 +1,6 @@
 {
   "name": "src",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -27,9 +27,9 @@
     "@improbable-eng/grpc-web-node-http-transport": "^0.15.0",
     "@influxdata/influxdb-client": "^1.33.2",
     "@koa/cors": "^4.0.0",
-    "@wormhole-foundation/relayer-engine": "github:wormhole-foundation/relayer-engine#92db57949b3e0baceabcb5c894a9ffcec9afe7f1",
-    "@xlabs/relayer-engine-middleware": "2.2.16",
-    "@xlabs/cctp-middleware": "^0.2.2",
+    "@wormhole-foundation/relayer-engine": "github:wormhole-foundation/relayer-engine#bf0fd9e6e170c11fd2b1d3b8aa888117f676221f",
+    "@xlabs/relayer-engine-middleware": "2.2.18",
+    "@xlabs/cctp-middleware": "0.2.2-alpha",
     "ethers": "^5.7.2",
     "ioredis": "^5.3.1",
     "koa": "^2.14.1",
