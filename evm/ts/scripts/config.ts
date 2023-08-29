@@ -2,7 +2,7 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { SignerArguments, addSignerArgsParser } from "./signer";
 
-export type OperatingChainId = 2 | 6 | 23;
+export type OperatingChainId = 2 | 6 | 23 | 24;
 export type SupportedChainId = OperatingChainId;
 
 export interface ConfigArguments {
@@ -39,7 +39,7 @@ export function isChain(chainId: number): chainId is SupportedChainId {
  * We currently only support EVM chains in these scripts.
  */
 export function isOperatingChain(chainId: number): chainId is OperatingChainId {
-  return chainId === 2 || chainId === 6 || chainId === 23;
+  return chainId === 2 || chainId === 6 || chainId === 23 || chainId === 24;
 }
 
 export function configArgsParser(): yargs.Argv<ConfigArguments> {
