@@ -89,18 +89,16 @@ async function updateMaxNativeSwapAmount(
 ): Promise<TxResult> {
   const currentMaxNativeSwapAmount = await relayer.maxNativeSwapAmount(token);
   if (currentMaxNativeSwapAmount.eq(maxNativeSwapAmount)) {
-    console.log(`Max native swap amount for token=${token} already set to maxNativeSwapAmount=${maxNativeSwapAmount}`);
+    console.log(
+      `Max native swap amount for token=${token} already set to maxNativeSwapAmount=${maxNativeSwapAmount}`
+    );
     return TxResult.Success("");
   }
 
   // Builds tx overrides according to operating chain
   const overrides = await buildOverrides(
     () =>
-      relayer.estimateGas.updateMaxNativeSwapAmount(
-        RELEASE_CHAIN_ID,
-        token,
-        maxNativeSwapAmount
-      ),
+      relayer.estimateGas.updateMaxNativeSwapAmount(RELEASE_CHAIN_ID, token, maxNativeSwapAmount),
     RELEASE_CHAIN_ID
   );
   const tx = await relayer.updateMaxNativeSwapAmount(
