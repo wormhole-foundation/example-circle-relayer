@@ -1,4 +1,9 @@
-import { CHAIN_ID_AVAX, CHAIN_ID_ETH, CHAIN_ID_ARBITRUM } from "@certusone/wormhole-sdk";
+import {
+  CHAIN_ID_AVAX,
+  CHAIN_ID_ETH,
+  CHAIN_ID_ARBITRUM,
+  CHAIN_ID_OPTIMISM,
+} from "@certusone/wormhole-sdk";
 import { ethers, Wallet } from "ethers";
 import { rpcsByEnv } from "./rpcs";
 import { relayerContract } from "../common/contracts";
@@ -16,6 +21,7 @@ const strip0x = (str: string) =>
 const ethKey = process.env.ETH_OWNER_PRIVATE_KEY;
 const avaxKey = process.env.AVAX_OWNER_PRIVATE_KEY;
 const arbKey = process.env.ARBITRUM_OWNER_PRIVATE_KEY;
+const optKey = process.env.OPTIMISM_OWNER_PRIVATE_KEY;
 if (!ethKey) {
   console.error("ETH_OWNER_PRIVATE_KEY is required!");
   process.exit(1);
@@ -28,9 +34,18 @@ if (!arbKey) {
   console.error("ARBITRUM_OWNER_PRIVATE_KEY is required!");
   process.exit(1);
 }
+if (!optKey) {
+  console.error("OPTIMISM_OWNER_PRIVATE_KEY is required!");
+  process.exit(1);
+}
 
 // supported chains
-const SUPPORTED_CHAINS = [CHAIN_ID_ETH, CHAIN_ID_AVAX, CHAIN_ID_ARBITRUM];
+const SUPPORTED_CHAINS = [
+  CHAIN_ID_ETH,
+  CHAIN_ID_AVAX,
+  CHAIN_ID_ARBITRUM,
+  CHAIN_ID_OPTIMISM,
+];
 type SupportedChainId = typeof SUPPORTED_CHAINS[number];
 
 const rpcs: { [k in SupportedChainId]?: ethers.providers.Provider } =
@@ -47,6 +62,10 @@ const SIGNERS = {
   ),
   [CHAIN_ID_ARBITRUM]: new ethers.Wallet(
     new Uint8Array(Buffer.from(strip0x(arbKey), "hex")),
+    rpcs[CHAIN_ID_ARBITRUM]
+  ),
+  [CHAIN_ID_OPTIMISM]: new ethers.Wallet(
+    new Uint8Array(Buffer.from(strip0x(optKey), "hex")),
     rpcs[CHAIN_ID_ARBITRUM]
   ),
 };
