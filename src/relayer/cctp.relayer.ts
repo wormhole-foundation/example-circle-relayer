@@ -129,7 +129,7 @@ export class CctpRelayer {
     const targetChainName = coalesceChainName(toChain);
 
     logger.info(
-      `Processing transaction from ${sourceChainName} to ${targetChainName}`
+      `Processing transaction from ${sourceChainName} to ${targetChainName}. Circle Payload Nonce: ${payload.nonce}}`
     );
 
     await job.updateProgress(25);
