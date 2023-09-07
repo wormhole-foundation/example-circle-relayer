@@ -1,6 +1,6 @@
 {
-  "name": "src",
-  "version": "0.3.4",
+  "name": "@xlabs/circle-offchain-relayer",
+  "version": "0.3.6",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -28,8 +28,8 @@
     "@influxdata/influxdb-client": "^1.33.2",
     "@koa/cors": "^4.0.0",
     "@wormhole-foundation/relayer-engine": "github:wormhole-foundation/relayer-engine#b93fbdd8216a92b2d7091e33d96d07f5044249e1",
+    "@xlabs/cctp-middleware": "^0.2.5",
     "@xlabs/relayer-engine-middleware": "^2.2.22",
-    "@xlabs/cctp-middleware": "^0.2.3",
     "ethers": "^5.7.2",
     "ioredis": "^5.3.1",
     "koa": "^2.14.1",
@@ -38,7 +38,6 @@
     "node-redis": "^0.1.7",
     "prom-client": "^14.2.0",
     "typeorm": "^0.3.15",
-    "typescript": "^4.9.5",
     "winston": "^3.8.2"
   },
   "license": "ISC",
@@ -46,6 +45,7 @@
     "@types/koa": "^2.13.6",
     "@types/koa__cors": "^4.0.0",
     "@types/koa-router": "^7.4.4",
-    "prettier": "^2.8.6"
+    "prettier": "^2.8.6",
+    "typescript": "^5.2.2"
   }
 }
