@@ -1,3 +1,4 @@
+import * as util from "util";
 import { WriteApi } from "@influxdata/influxdb-client";
 import { ethers } from "ethers";
 import {
@@ -80,6 +81,8 @@ export class CctpRelayer {
       throw new UnrecoverableError(e.message);
     }
 
+    logger.info(`Parsed CCTP Transfer Payload: ${util.inspect(payload)}`);
+
     const {
       fromChain,
       toChain,
@@ -96,6 +99,8 @@ export class CctpRelayer {
       logger.error("Skipping Circle Relayer VAA. Malformed payload: ", e);
       throw new UnrecoverableError(e.message);
     }
+
+    logger.info(`Parsed CCTP Relayer Payload: ${util.inspect(relayerPayload)}`);
 
     const { feeAmount, toNativeAmount, recipientWallet, payloadId } =
       relayerPayload;
@@ -169,6 +174,9 @@ export class CctpRelayer {
     const sourceReceipt = await ctx.providers.evm[
       emitterChain
     ]![0].getTransactionReceipt(ctx.sourceTxHash!);
+
+    ctx.logger.info(`Source Transcation Receipt: ${util.inspect(sourceReceipt)}`);
+
     const logs = await ctx.cctp.fetchAttestedLogs(fromDomain, sourceReceipt, {
       nonce: BigInt(payload.nonce),
     });
