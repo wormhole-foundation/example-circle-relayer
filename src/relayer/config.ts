@@ -21,6 +21,12 @@ export function getBlockchainEnv(env: string): Environment {
   }
 }
 
+export interface MetricsMiddlewareConfig {
+  processingDurationBuckets?: number[],
+  totalDurationBuckets?: number[],
+  relayDurationBuckets?: number[],
+}
+
 if (!process.env.EVM_PRIVATE_KEY) {
   if (!process.env.AVAX_PRIVATE_KEY) {
     throw new Error("AVAX_PRIVATE_KEY not set");
@@ -85,4 +91,13 @@ export const config = {
     uri: process.env.MONGO_URI ?? "mongodb://localhost:27017",
     database: process.env.MONGO_DATABASE ?? "cctp-relayer",
   },
+  metrics: {
+    processingDurationBuckets: parseNumberArray(process.env.METRICS_PROCESSING_DURATION_BUCKETS),
+    totalDurationBuckets: parseNumberArray(process.env.METRICS_TOTAL_DURATION_BUCKETS),
+    relayDurationBuckets: parseNumberArray(process.env.METRICS_RELAY_DURATION_BUCKETS),
+  }
 };
+
+function parseNumberArray(raw?: string): number[] | undefined {
+  return raw?.split(",").map(value => Number(value));
+}

@@ -9,12 +9,14 @@ import {
 import { DataContext, storeRelays } from "../data/data.middleware";
 import { setupDb } from "../data/db";
 import { InfluxDB, WriteApi } from "@influxdata/influxdb-client";
+import { Registry } from "prom-client";
 import { logging } from "@xlabs/relayer-engine-middleware/lib/logging.middleware";
 import { assetPrices } from "@xlabs/relayer-engine-middleware/lib/asset-pricing.middleware";
 import {
   explorerLinks,
   ExplorerLinksContext,
 } from "@xlabs/relayer-engine-middleware/lib/explorer-links.middleware";
+import { metricsMiddleware } from "./metrics";
 import { runAPI } from "@xlabs/relayer-engine-middleware/lib/relayer-api";
 
 import {
@@ -70,6 +72,9 @@ async function main() {
     },
   });
 
+  const metricsMiddlewareRegistry = new Registry();
+  app.use(metricsMiddleware(metricsMiddlewareRegistry, config.metrics));
+
   // Custom xlabs middleware: https://github.com/XLabs/relayer-engine-middleware
   app.use(logging(logger));
   app.use(assetPrices());
@@ -86,7 +91,7 @@ async function main() {
 
   app.listen();
 
-  runAPI(app, config.api.port, logger);
+  runAPI(app, config.api.port, logger, app.storage, [metricsMiddlewareRegistry]);
 }
 
 main();
