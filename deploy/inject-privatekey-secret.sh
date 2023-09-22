@@ -8,8 +8,8 @@ kubectl create secret generic circle-relayer-key \
     --namespace=circle-relayer
 
 kubectl create secret generic circle-relayer-owner-key \
-    --from-literal=AVAX_OWNER_PRIVATE_KEY=${AVAX_OWNER_PRIVATE_KEY} \
-    --from-literal=ETH_OWNER_PRIVATE_KEY=${ETH_OWNER_PRIVATE_KEY} \
-    --from-literal=ARBITRUM_OWNER_PRIVATE_KEY=${ARBITRUM_OWNER_PRIVATE_KEY} \
-    --from-literal=OPTIMISM_OWNER_PRIVATE_KEY=${OPTIMISM_OWNER_PRIVATE_KEY} \
+    --from-literal=AVAX_PRICE_ASSISTANT_KEY=${AVAX_PRICE_ASSISTANT_KEY} \
+    --from-literal=ETH_PRICE_ASSISTANT_KEY=${ETH_PRICE_ASSISTANT_KEY} \
+    --from-literal=ARBITRUM_PRICE_ASSISTANT_KEY=${ARBITRUM_PRICE_ASSISTANT_KEY} \
+    --from-literal=OPTIMISM_PRICE_ASSISTANT_KEY=${OPTIMISM_PRICE_ASSISTANT_KEY} \
     --namespace=circle-relayer

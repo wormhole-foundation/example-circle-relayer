@@ -18,24 +18,24 @@ const blockchainEnv = getBlockchainEnv(process.env.BLOCKCHAIN_ENV);
 const strip0x = (str: string) =>
   str.startsWith("0x") ? str.substring(2) : str;
 
-const ethKey = process.env.ETH_OWNER_PRIVATE_KEY;
-const avaxKey = process.env.AVAX_OWNER_PRIVATE_KEY;
-const arbKey = process.env.ARBITRUM_OWNER_PRIVATE_KEY;
-const optKey = process.env.OPTIMISM_OWNER_PRIVATE_KEY;
+const ethKey = process.env.ETH_PRICE_ASSISTANT_KEY;
+const avaxKey = process.env.AVAX_PRICE_ASSISTANT_KEY;
+const arbKey = process.env.ARBITRUM_PRICE_ASSISTANT_KEY;
+const optKey = process.env.OPTIMISM_PRICE_ASSISTANT_KEY;
 if (!ethKey) {
-  console.error("ETH_OWNER_PRIVATE_KEY is required!");
+  console.error("ETH_PRICE_ASSISTANT_KEY is required!");
   process.exit(1);
 }
 if (!avaxKey) {
-  console.error("AVAX_OWNER_PRIVATE_KEY is required!");
+  console.error("AVAX_PRICE_ASSISTANT_KEY is required!");
   process.exit(1);
 }
 if (!arbKey) {
-  console.error("ARBITRUM_OWNER_PRIVATE_KEY is required!");
+  console.error("ARBITRUM_PRICE_ASSISTANT_KEY is required!");
   process.exit(1);
 }
 if (!optKey) {
-  console.error("OPTIMISM_OWNER_PRIVATE_KEY is required!");
+  console.error("OPTIMISM_PRICE_ASSISTANT_KEY is required!");
   process.exit(1);
 }
 
@@ -66,7 +66,7 @@ const SIGNERS = {
   ),
   [CHAIN_ID_OPTIMISM]: new ethers.Wallet(
     new Uint8Array(Buffer.from(strip0x(optKey), "hex")),
-    rpcs[CHAIN_ID_ARBITRUM]
+    rpcs[CHAIN_ID_OPTIMISM]
   ),
 };
 
