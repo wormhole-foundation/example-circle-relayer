@@ -62,6 +62,7 @@ async function main() {
     spyEndpoint: config.spy,
     concurrency: 5,
     privateKeys: config.privateKeys,
+    providers: config.providers,
     logger,
     workflows: {
       retries: 10,
