@@ -70,7 +70,7 @@ const testnetRpcs = {
       "https://arbitrum-goerli.public.blastapi.io"
   ),
   [CHAIN_ID_OPTIMISM]: new ethers.providers.JsonRpcProvider(
-    process.env.ARBITRUM_RPC_HTTP ?? "https://goerli.optimism.io"
+    process.env.OPTIMISM_RPC_HTTP ?? "https://goerli.optimism.io"
   ),
 };
 
