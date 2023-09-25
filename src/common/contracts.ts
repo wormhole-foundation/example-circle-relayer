@@ -2,7 +2,7 @@ import { BigNumber, Contract, ethers } from "ethers";
 import {
   CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN,
   SupportedChainId,
-} from "./supported-chains.config";
+} from "./supported-chains.config.js";
 import { tryUint8ArrayToNative } from "@certusone/wormhole-sdk";
 
 export function relayerContract(

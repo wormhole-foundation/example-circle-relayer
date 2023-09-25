@@ -4,7 +4,7 @@ import {
   CHAIN_ID_ETH,
   CHAIN_ID_OPTIMISM,
 } from "@certusone/wormhole-sdk";
-import { SupportedChainId } from "../common/supported-chains.config";
+import { SupportedChainId } from "../common/supported-chains.config.js";
 
 const axios = require("axios"); // import breaks
 
