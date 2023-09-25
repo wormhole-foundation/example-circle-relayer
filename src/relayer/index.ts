@@ -56,6 +56,7 @@ async function main() {
   if (process.env.BLOCKCHAIN_PROVIDERS) {
     try {
       providers = JSON.parse(process.env.BLOCKCHAIN_PROVIDERS);
+      logger.info("Using providers from BLOCKCHAIN_PROVIDERS");
     } catch (e) {
       logger.error(
         `Failed to parse BLOCKCHAIN_PROVIDERS: ${process.env.BLOCKCHAIN_PROVIDERS}`
