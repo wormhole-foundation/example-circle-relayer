@@ -6,7 +6,6 @@ import {
 } from "@certusone/wormhole-sdk";
 import { ClusterOptions, RedisOptions } from "ioredis";
 import { Environment } from "@wormhole-foundation/relayer-engine";
-import { rpcsByEnv } from "./rpcs";
 
 export function getBlockchainEnv(env: string): Environment {
   if (!env) {
@@ -43,10 +42,6 @@ const evmPrivateKeys = process.env.EVM_PRIVATE_KEY?.split(",") ?? [];
 
 const isRedisCluster = !!process.env.REDIS_CLUSTER_ENDPOINTS;
 
-const defaultRpcs = {
-  chains: rpcsByEnv[getBlockchainEnv(process.env.BLOCKCHAIN_ENV ?? "")]
-}
-
 export const config = {
   env: process.env.NODE_ENV || "local",
   name: process.env.RELAYER_NAME || "CCTPRelayer",
@@ -60,9 +55,6 @@ export const config = {
     [CHAIN_ID_OPTIMISM]:
       process.env.OPTIMISM_PRIVATE_KEY?.split(",") ?? evmPrivateKeys,
   },
-  providers: process.env.BLOCKCHAIN_PROVIDERS
-      ? JSON.parse(process.env.BLOCKCHAIN_PROVIDERS)
-      : defaultRpcs,
   spy: process.env.SPY_URL ?? "localhost:7073",
   concurrency: Number(process.env.RELAY_CONCURRENCY) || 1,
   influx: {

@@ -52,6 +52,18 @@ async function main() {
   const usdcWhSenderAddresses = USDC_WH_SENDER[env];
   const serv = new CctpRelayer(env, influxWriteApi);
 
+  let providers = undefined;
+  if (process.env.BLOCKCHAIN_PROVIDERS) {
+    try {
+      providers = JSON.parse(process.env.BLOCKCHAIN_PROVIDERS);
+    } catch (e) {
+      logger.error(
+        `Failed to parse BLOCKCHAIN_PROVIDERS: ${process.env.BLOCKCHAIN_PROVIDERS}`
+      );
+      logger.error("Falling back to default providers");
+    }
+  }
+
   await setupDb({ uri: config.db.uri, database: config.db.database });
   const app = new StandardRelayerApp<CctpRelayerContext>(env, {
     name: config.name,
@@ -62,7 +74,7 @@ async function main() {
     spyEndpoint: config.spy,
     concurrency: 5,
     privateKeys: config.privateKeys,
-    providers: config.providers,
+    providers,
     logger,
     workflows: {
       retries: 10,
