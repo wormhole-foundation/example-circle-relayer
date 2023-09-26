@@ -1,8 +1,9 @@
 [profile.default]
-solc_version = "0.8.17"
+solc_version = "0.8.19"
 optimizer = true
 optimizer_runs = 200
 via_ir = true
+evm_version = "paris"
 
 test = "forge-test"
 
