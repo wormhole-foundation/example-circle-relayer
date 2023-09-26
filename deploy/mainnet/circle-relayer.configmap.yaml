@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: circle-relayer-env
+  namespace: circle-relayer
+data:
+  NODE_ENV: "production"
+  BLOCKCHAIN_ENV: "mainnet"
+  SPY_URL: "spy.token-bridge-relayer.svc.cluster.local:7073"
+  RELAY_CONCURRENCY: "3"
+  RELAY_TIME_BUCKETS: "2000,3000,5000,8000,15000,60000,1200000,3600000"
+  TOTAL_DURATION_BUCKETS: "30000,60000,180000,300000,600000,1200000,3600000"
+#  RELAYER_NAME: "CCTPRelayer-new"

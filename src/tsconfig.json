@@ -1,20 +1,24 @@
 {
   "compilerOptions": {
-    "outDir": "lib",
+    "outDir": "build",
     "target": "esnext",
     "module": "commonjs",
     "moduleResolution": "node",
     "lib": ["es2019"],
     "skipLibCheck": true,
     "allowJs": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "downlevelIteration": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
   },
-  "include": ["src"],
+  "include": ["relayer", "oracle", "api", "common", "data"],
   "exclude": ["node_modules", "**/__tests__/*"]
 }

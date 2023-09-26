@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: circle-relayer-env
+  namespace: circle-relayer
+data:
+  NODE_ENV: "staging"
+  BLOCKCHAIN_ENV: "testnet"
+  SPY_URL: "spy.generic-relayer.svc.cluster.local:7073"
+  RELAY_CONCURRENCY: "5"
+  RELAY_TIME_BUCKETS: "2000,3000,5000,8000,15000,60000,1200000,3600000"
+  TOTAL_DURATION_BUCKETS: "30000,60000,180000,300000,600000,1200000,3600000"

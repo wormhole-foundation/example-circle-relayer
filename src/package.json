@@ -1,0 +1,51 @@
+{
+  "name": "@xlabs/circle-offchain-relayer",
+  "version": "0.3.14",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node relayer/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "docker:build-staging": "docker build --platform=linux/amd64 -t $AWS_ACCOUNT_STAGING.dkr.ecr.us-east-2.amazonaws.com/circle-relayer:$(npm run version --silent) --secret id=npmrc,src=$HOME/.npmrc .",
+    "docker:push-staging": "npm run docker:login-staging && docker push $AWS_ACCOUNT_STAGING.dkr.ecr.us-east-2.amazonaws.com/circle-relayer:$(npm run version --silent)",
+    "docker:build-push-staging": "npm run docker:build-staging && npm run docker:push-staging",
+    "docker:build": "docker build --platform=linux/amd64 -t $AWS_ACCOUNT_PRODUCTION.dkr.ecr.us-east-2.amazonaws.com/circle-relayer:$(npm run version --silent) --secret id=npmrc,src=$HOME/.npmrc .",
+    "docker:push": "npm run docker:login && docker push $AWS_ACCOUNT_PRODUCTION.dkr.ecr.us-east-2.amazonaws.com/circle-relayer:$(npm run version --silent)",
+    "docker:build-push": "npm run docker:build && npm run docker:push",
+    "docker:login": "aws ecr get-login-password --region us-east-2 --profile prod | docker login --username AWS --password-stdin $AWS_ACCOUNT_PRODUCTION.dkr.ecr.us-east-2.amazonaws.com",
+    "docker:login-staging": "aws ecr get-login-password --region us-east-2 --profile staging | docker login --username AWS --password-stdin $AWS_ACCOUNT_STAGING.dkr.ecr.us-east-2.amazonaws.com",
+    "version": "npm pkg get version --workspaces=false | tr -d \\\"",
+    "spy:testnet": "docker run --platform=linux/amd64 -p 7073:7073 --entrypoint /guardiand ghcr.io/wormhole-foundation/guardiand:latest spy --nodeKey /node.key --spyRPC \"[::]:7073\" --network /wormhole/testnet/2/1 --bootstrap /dns4/wormhole-testnet-v2-bootstrap.certus.one/udp/8999/quic/p2p/12D3KooWAkB9ynDur1Jtoa97LBUp8RXdhzS5uHgAfdTquJbrbN7i",
+    "spy:mainnet": "docker run --platform=linux/amd64 -p 7073:7073 --entrypoint /guardiand ghcr.io/wormhole-foundation/guardiand:latest spy --nodeKey /node.key --spyRPC \"[::]:7073\" --network /wormhole/mainnet/2 --bootstrap /dns4/wormhole-mainnet-v2-bootstrap.certus.one/udp/8999/quic/p2p/12D3KooWQp644DK27fd3d4Km3jr7gHiuJJ5ZGmy8hH4py7fP4FP7,/dns4/wormhole-v2-mainnet-bootstrap.xlabs.xyz/udp/8999/quic/p2p/12D3KooWNQ9tVrcb64tw6bNs2CaNrUGPM7yRrKvBBheQ5yCyPHKC"
+  },
+  "keywords": [],
+  "author": "Gabriel Zimmermann",
+  "dependencies": {
+    "@certusone/wormhole-sdk": "^0.9.24-beta.0",
+    "@improbable-eng/grpc-web-node-http-transport": "^0.15.0",
+    "@influxdata/influxdb-client": "^1.33.2",
+    "@koa/cors": "^4.0.0",
+    "@wormhole-foundation/relayer-engine": "github:wormhole-foundation/relayer-engine#b93fbdd8216a92b2d7091e33d96d07f5044249e1",
+    "@xlabs/cctp-middleware": "^0.2.5",
+    "@xlabs/relayer-engine-middleware": "^2.2.22",
+    "ethers": "^5.7.2",
+    "ioredis": "^5.3.1",
+    "koa": "^2.14.1",
+    "koa-router": "^12.0.0",
+    "mongodb": "5.2.0",
+    "node-redis": "^0.1.7",
+    "prom-client": "^14.2.0",
+    "typeorm": "^0.3.15",
+    "winston": "^3.8.2"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@types/koa": "^2.13.6",
+    "@types/koa__cors": "^4.0.0",
+    "@types/koa-router": "^7.4.4",
+    "prettier": "^2.8.6",
+    "typescript": "^5.2.2"
+  }
+}
