@@ -70,6 +70,7 @@ async function main() {
     name: config.name,
     fetchSourceTxhash: true,
     redis: config.redis,
+    wormholeRpcs: config.wormholeRpcs,
     redisClusterEndpoints: config.redisClusterEndpoints,
     redisCluster: config.redisClusterOptions,
     spyEndpoint: config.spy,

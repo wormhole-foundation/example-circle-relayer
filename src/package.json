@@ -1,6 +1,6 @@
 {
   "name": "@xlabs/circle-offchain-relayer",
-  "version": "0.3.14",
+  "version": "0.3.15",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -27,7 +27,7 @@
     "@improbable-eng/grpc-web-node-http-transport": "^0.15.0",
     "@influxdata/influxdb-client": "^1.33.2",
     "@koa/cors": "^4.0.0",
-    "@wormhole-foundation/relayer-engine": "github:wormhole-foundation/relayer-engine#b93fbdd8216a92b2d7091e33d96d07f5044249e1",
+    "@wormhole-foundation/relayer-engine": "github:wormhole-foundation/relayer-engine#0658b6f7f9544b00712da2699a69c07d4f31ee5c",
     "@xlabs/cctp-middleware": "^0.2.5",
     "@xlabs/relayer-engine-middleware": "^2.2.22",
     "ethers": "^5.7.2",

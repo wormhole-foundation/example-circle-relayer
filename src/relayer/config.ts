@@ -95,7 +95,10 @@ export const config = {
     processingDurationBuckets: parseNumberArray(process.env.METRICS_PROCESSING_DURATION_BUCKETS),
     totalDurationBuckets: parseNumberArray(process.env.METRICS_TOTAL_DURATION_BUCKETS),
     relayDurationBuckets: parseNumberArray(process.env.METRICS_RELAY_DURATION_BUCKETS),
-  }
+  },
+  wormholeRpcs: process.env.WORMHOLE_RPCS
+    ? JSON.parse(process.env.WORMHOLE_RPCS)
+    : undefined, // default to Relayer Engine defaults if we don't set specific RPCs
 };
 
 function parseNumberArray(raw?: string): number[] | undefined {
