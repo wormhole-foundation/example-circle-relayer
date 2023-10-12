@@ -11,11 +11,12 @@
     "ethers": "^5.7.2"
   },
   "dependencies": {
-    "@certusone/wormhole-sdk": "0.9",
+    "@certusone/wormhole-sdk": "^0.9.16",
     "@openzeppelin/contracts": "^4.7.3",
     "@typechain/ethers-v5": "^10.2.0",
     "@types/chai": "^4.3.3",
     "@types/mocha": "^9.1.1",
+    "@xlabs-xyz/ledger-signer": "0.0.3",
     "elliptic": "^6.5.4",
     "mocha": "^10.0.0",
     "ts-mocha": "^10.0.0",
