@@ -5,6 +5,7 @@ import {
   CHAIN_ID_ARBITRUM,
   CHAIN_ID_OPTIMISM,
   ChainId,
+  CHAIN_ID_BASE,
 } from "@certusone/wormhole-sdk";
 import { Environment } from "@wormhole-foundation/relayer-engine";
 
@@ -15,6 +16,7 @@ export const SUPPORTED_CHAINS = [
   CHAIN_ID_AVAX,
   CHAIN_ID_OPTIMISM,
   CHAIN_ID_ARBITRUM,
+  CHAIN_ID_BASE,
 ];
 export type SupportedChainId = typeof SUPPORTED_CHAINS[number];
 
@@ -35,6 +37,7 @@ export const USDC_ERC20_ADDRESSES_BY_ENV = {
     [CHAIN_ID_AVAX]: "0x5425890298aed601595a70AB815c96711a31Bc65",
     [CHAIN_ID_ARBITRUM]: "0xfd064A18f3BF249cf1f87FC203E90D8f650f2d63",
     [CHAIN_ID_OPTIMISM]: "0xe05606174bac4a6364b31bd0eca4bf4dd368f8c6",
+    [CHAIN_ID_BASE]: "0xf175520c52418dfe19c8098071a252da48cd1c19",
   },
   [Environment.DEVNET]: {
     [CHAIN_ID_ETH]: "",
@@ -51,6 +54,7 @@ export const CIRCLE_CONTRACT_ADDRESSES: AddressesByEnvAndChain = {
     [CHAIN_ID_AVAX]: "0xa9fb1b3009dcb79e2fe346c16a604b8fa8ae0a79",
     [CHAIN_ID_ARBITRUM]: "0x109bc137cb64eab7c0b1dddd1edf341467dc2d35",
     [CHAIN_ID_OPTIMISM]: "0x9ff9a4da6f2157a9c82ce756f8fd7e0d75be8895",
+    [CHAIN_ID_BASE]: "0x9ff9a4da6f2157A9c82CE756f8fD7E0d75be8895",
   },
   [Environment.MAINNET]: {
     [CHAIN_ID_ETH]: "0x0a992d191DEeC32aFe36203Ad87D7d289a738F81",
@@ -78,6 +82,10 @@ export const USDC_RELAYER_ADDRESSES: AddressesByEnvAndChain = {
       "0xbf683d541e11320418ca78ec13309938e6c5922f",
     [CHAIN_ID_OPTIMISM]:
       process.env.OPTIMISM_RELAYER_ADDRESS ||
+      process.env.EVM_RELAYER_ADDRESS ||
+      "0x4cb69FaE7e7Af841e44E1A1c30Af640739378bb2",
+    [CHAIN_ID_BASE]:
+      process.env.BASE_RELAYER_ADDRESS ||
       process.env.EVM_RELAYER_ADDRESS ||
       "0x4cb69FaE7e7Af841e44E1A1c30Af640739378bb2",
   },
@@ -113,6 +121,7 @@ export const USDC_WH_SENDER: AddressesByEnvAndChain = {
     [CHAIN_ID_AVAX]: "0x58f4c17449c90665891c42e14d34aae7a26a472e",
     [CHAIN_ID_ARBITRUM]: "0x2e8f5e00a9c5d450a72700546b89e2b70dfb00f2",
     [CHAIN_ID_OPTIMISM]: "0x2703483B1a5a7c577e8680de9Df8Be03c6f30e3c",
+    [CHAIN_ID_BASE]: "0x2703483B1a5a7c577e8680de9Df8Be03c6f30e3c",
   },
   [Environment.MAINNET]: {
     [CHAIN_ID_ETH]: "0xaada05bd399372f0b0463744c09113c137636f6a",
@@ -135,6 +144,7 @@ export const CIRCLE_DOMAIN_TO_WORMHOLE_CHAIN: {
   1: CHAIN_ID_AVAX,
   2: CHAIN_ID_OPTIMISM,
   3: CHAIN_ID_ARBITRUM,
+  6: CHAIN_ID_BASE,
 };
 
 export const WORMHOLE_CHAIN_TO_CIRCLE_DOMAIN = Object.fromEntries(
