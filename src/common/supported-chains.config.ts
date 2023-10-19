@@ -31,6 +31,7 @@ export const USDC_ERC20_ADDRESSES_BY_ENV = {
     [CHAIN_ID_AVAX]: "0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e",
     [CHAIN_ID_ARBITRUM]: "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
     [CHAIN_ID_OPTIMISM]: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+    [CHAIN_ID_BASE]: "", // TODO: set after mainnet deployment
   },
   [Environment.TESTNET]: {
     [CHAIN_ID_ETH]: "0x07865c6E87B9F70255377e024ace6630C1Eaa37F",
@@ -44,6 +45,7 @@ export const USDC_ERC20_ADDRESSES_BY_ENV = {
     [CHAIN_ID_AVAX]: "",
     [CHAIN_ID_ARBITRUM]: "",
     [CHAIN_ID_OPTIMISM]: "",
+    [CHAIN_ID_BASE]: "",
   },
 };
 
