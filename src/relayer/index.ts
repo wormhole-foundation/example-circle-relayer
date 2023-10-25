@@ -11,7 +11,7 @@ import { setupDb } from "../data/db";
 import { InfluxDB, WriteApi } from "@influxdata/influxdb-client";
 import { Registry } from "prom-client";
 import { logging } from "@xlabs/relayer-engine-middleware/lib/logging.middleware";
-import { assetPrices } from "@xlabs/relayer-engine-middleware/lib/asset-pricing.middleware";
+import { assetPrices, PricingContext } from "@xlabs/relayer-engine-middleware/lib/asset-pricing.middleware";
 import {
   explorerLinks,
   ExplorerLinksContext,
@@ -24,11 +24,13 @@ import {
   EvmOverridesContext,
 } from "@xlabs/relayer-engine-middleware/lib/override.middleware";
 import { cctp, CctpContext } from "@xlabs/cctp-middleware/lib";
+import { RedisStorage } from "@wormhole-foundation/relayer-engine/lib/storage/redis-storage";
 
 export type CctpRelayerContext = StandardRelayerContext &
   ExplorerLinksContext &
   EvmOverridesContext &
   CctpContext &
+  PricingContext &
   DataContext;
 
 // based on the attempts, returns an exponential backoff in ms
@@ -106,7 +108,7 @@ async function main() {
 
   app.listen();
 
-  runAPI(app, config.api.port, logger, app.storage, [metricsMiddlewareRegistry]);
+  runAPI(app, config.api.port, logger, app.storage as RedisStorage, [metricsMiddlewareRegistry]);
 }
 
 main();
