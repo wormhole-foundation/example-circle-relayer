@@ -1,6 +1,7 @@
 import {
   CHAIN_ID_ARBITRUM,
   CHAIN_ID_AVAX,
+  CHAIN_ID_BASE,
   CHAIN_ID_ETH,
   CHAIN_ID_OPTIMISM,
 } from "@certusone/wormhole-sdk";
@@ -54,6 +55,8 @@ export const config = {
       process.env.ARBITRUM_PRIVATE_KEY?.split(",") ?? evmPrivateKeys,
     [CHAIN_ID_OPTIMISM]:
       process.env.OPTIMISM_PRIVATE_KEY?.split(",") ?? evmPrivateKeys,
+    [CHAIN_ID_BASE]:
+      process.env.BASE_PRIVATE_KEY?.split(",") ?? evmPrivateKeys,
   },
   spy: process.env.SPY_URL ?? "localhost:7073",
   concurrency: Number(process.env.RELAY_CONCURRENCY) || 1,
