@@ -69,14 +69,14 @@ export const config = {
   redisClusterEndpoints: process.env.REDIS_CLUSTER_ENDPOINTS?.split(","), // "url1:port,url2:port"
   redisClusterOptions: isRedisCluster
     ? <ClusterOptions>{
-        dnsLookup: (address: any, callback: any) => callback(null, address),
-        slotsRefreshTimeout: 1000,
-        redisOptions: {
-          tls: process.env.REDIS_TLS ? {} : undefined,
-          username: process.env.REDIS_USERNAME,
-          password: process.env.REDIS_PASSWORD,
-        },
-      }
+      dnsLookup: (address: any, callback: any) => callback(null, address),
+      slotsRefreshTimeout: 1000,
+      redisOptions: {
+        tls: process.env.REDIS_TLS ? {} : undefined,
+        username: process.env.REDIS_USERNAME,
+        password: process.env.REDIS_PASSWORD,
+      },
+    }
     : undefined,
   redis: <RedisOptions>{
     tls: process.env.REDIS_TLS ? {} : undefined,
@@ -102,7 +102,25 @@ export const config = {
   wormholeRpcs: process.env.WORMHOLE_RPCS
     ? JSON.parse(process.env.WORMHOLE_RPCS)
     : undefined, // default to Relayer Engine defaults if we don't set specific RPCs
+  missedVaas: {
+    enabled: process.env.MISSED_VAAS_ENABLED === "true",
+    startingSequenceConfig: process.env.MISSED_VAAS_STARTING_SEQUENCE_CONFIG
+      ? parseStartingSequence(
+        process.env.MISSED_VAAS_STARTING_SEQUENCE_CONFIG
+      )
+      : undefined,
+    forceSeenKeysReindex:
+      process.env.MISSED_VAAS_FORCE_SEEN_KEYS_REINDEX === "true",
+  },
 };
+
+function parseStartingSequence(raw: string): Record<string, bigint> {
+  const obj = JSON.parse(raw) as Record<string, number>;
+
+  return Object.fromEntries(
+    Object.entries(obj).map(([k, v]) => [k, BigInt(v as number)])
+  );
+}
 
 function parseNumberArray(raw?: string): number[] | undefined {
   return raw?.split(",").map(value => Number(value));

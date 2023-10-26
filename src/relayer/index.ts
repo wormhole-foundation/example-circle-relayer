@@ -87,6 +87,7 @@ async function main() {
       maxDelayMs: 10 * minute,
       baseDelayMs: 2_000,
     },
+    missedVaaOptions: config.missedVaas,
   });
 
   const metricsMiddlewareRegistry = new Registry();
