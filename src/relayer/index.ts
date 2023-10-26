@@ -30,7 +30,6 @@ export type CctpRelayerContext = StandardRelayerContext &
   ExplorerLinksContext &
   EvmOverridesContext &
   CctpContext &
-  PricingContext &
   DataContext;
 
 // based on the attempts, returns an exponential backoff in ms
@@ -44,11 +43,7 @@ async function main() {
   if (config.influx.url) {
     logger.debug(`Pushing metrics to bucket ${config.influx.bucket}`);
     const { url, token, org, bucket } = config.influx;
-    influxWriteApi = new InfluxDB({ url, token }).getWriteApi(
-      org,
-      bucket,
-      "ns"
-    );
+    influxWriteApi = new InfluxDB({ url, token }).getWriteApi(org, bucket, "ns");
   }
 
   const usdcWhSenderAddresses = USDC_WH_SENDER[env];
@@ -60,9 +55,7 @@ async function main() {
       providers = JSON.parse(process.env.BLOCKCHAIN_PROVIDERS);
       logger.info("Using providers from BLOCKCHAIN_PROVIDERS");
     } catch (e) {
-      logger.error(
-        `Failed to parse BLOCKCHAIN_PROVIDERS: ${process.env.BLOCKCHAIN_PROVIDERS}`
-      );
+      logger.error(`Failed to parse BLOCKCHAIN_PROVIDERS: ${process.env.BLOCKCHAIN_PROVIDERS}`);
       logger.error("Falling back to default providers");
     }
   }
@@ -109,9 +102,7 @@ async function main() {
 
   app.listen();
 
-  runAPI(app, config.api.port, logger, app.storage as RedisStorage, [
-    metricsMiddlewareRegistry,
-  ]);
+  runAPI(app, config.api.port, logger, app.storage as RedisStorage, [metricsMiddlewareRegistry]);
 }
 
 main();
