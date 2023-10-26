@@ -30,6 +30,7 @@ export type CctpRelayerContext = StandardRelayerContext &
   ExplorerLinksContext &
   EvmOverridesContext &
   CctpContext &
+  PricingContext &
   DataContext;
 
 // based on the attempts, returns an exponential backoff in ms
