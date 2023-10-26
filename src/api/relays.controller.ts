@@ -1,6 +1,6 @@
-import { Relay } from "../data/relay.model";
+import { Relay } from "../data/relay.model.js";
 import { Context, Next } from "koa";
-import { RelayDto } from "./relay.dto";
+import { RelayDto } from "./relay.dto.js";
 
 export class RelayController {
   constructor(private relay: typeof Relay) {}

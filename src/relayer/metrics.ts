@@ -5,8 +5,8 @@ import {
 } from "@wormhole-foundation/relayer-engine";
 import { Registry } from "prom-client";
 import { coalesceChainName } from "@certusone/wormhole-sdk";
-import { CctpRelayerContext } from "./index";
-import { MetricsMiddlewareConfig } from "./config";
+import { CctpRelayerContext } from "./index.js";
+import { MetricsMiddlewareConfig } from "./config.js";
 
 const DEFAULT_BUCKETS = [
   10000, // 10s
@@ -19,7 +19,10 @@ const DEFAULT_BUCKETS = [
   3600000, // 1h
 ];
 
-const metricsOpts = (registry: Registry, config?: MetricsMiddlewareConfig): MetricsOpts<CctpRelayerContext> => {
+const metricsOpts = (
+  registry: Registry,
+  config?: MetricsMiddlewareConfig
+): MetricsOpts<CctpRelayerContext> => {
   async function labelsCustomizer(
     ctx: CctpRelayerContext
   ): Promise<Record<string, string | number>> {
@@ -40,10 +43,13 @@ const metricsOpts = (registry: Registry, config?: MetricsMiddlewareConfig): Metr
       processing: config?.processingDurationBuckets ?? DEFAULT_BUCKETS,
       total: config?.totalDurationBuckets ?? DEFAULT_BUCKETS,
       relay: config?.relayDurationBuckets ?? DEFAULT_BUCKETS,
-    }
+    },
   };
 };
 
-export function metricsMiddleware(registry: Registry, config?: MetricsMiddlewareConfig) {
+export function metricsMiddleware(
+  registry: Registry,
+  config?: MetricsMiddlewareConfig
+) {
   return metrics(metricsOpts(registry, config));
 }

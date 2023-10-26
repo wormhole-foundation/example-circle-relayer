@@ -1,5 +1,5 @@
 import { DataSource } from "typeorm";
-import { Relay } from "./relay.model";
+import { Relay } from "./relay.model.js";
 import * as mongodb from "mongodb";
 
 export async function setupDb({

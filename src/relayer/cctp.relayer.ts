@@ -1,6 +1,6 @@
 import * as util from "util";
 import { WriteApi } from "@influxdata/influxdb-client";
-import { ethers } from "ethers";
+import { ethers, Wallet } from "ethers";
 import {
   CircleRelayerPayload,
   CircleVaaPayload,
@@ -8,7 +8,7 @@ import {
   parseCCTPRelayerPayload,
   parseCCTPTransferPayload,
   relayerContract,
-} from "../common/contracts";
+} from "../common/contracts.js";
 import {
   Addresses,
   CIRCLE_CONTRACT_ADDRESSES,
@@ -16,20 +16,21 @@ import {
   USDC_DECIMALS,
   USDC_RELAYER_ADDRESSES,
   USDC_WH_SENDER,
-} from "../common/supported-chains.config";
+} from "../common/supported-chains.config.js";
 import {
   coalesceChainName,
   tryUint8ArrayToNative,
   uint8ArrayToHex,
 } from "@certusone/wormhole-sdk";
-import { CctpRelayerContext } from "./index";
+import { CctpRelayerContext } from "./index.js";
 import {
   Environment,
   Next,
   UnrecoverableError,
+  WalletToolBox,
 } from "@wormhole-foundation/relayer-engine";
-import { RelayStatus } from "../data/relay.model";
-import { ParsedVaaWithBytes } from "@wormhole-foundation/relayer-engine/lib";
+import { RelayStatus } from "../data/relay.model.js";
+import { ParsedVaaWithBytes } from "@wormhole-foundation/relayer-engine";
 
 function nanoToMs(nanos: number) {
   return nanos / 1e6;
@@ -175,7 +176,9 @@ export class CctpRelayer {
       emitterChain
     ]![0].getTransactionReceipt(ctx.sourceTxHash!);
 
-    ctx.logger.info(`Source Transcation Receipt: ${util.inspect(sourceReceipt)}`);
+    ctx.logger.info(
+      `Source Transcation Receipt: ${util.inspect(sourceReceipt)}`
+    );
 
     const logs = await ctx.cctp.fetchAttestedLogs(fromDomain, sourceReceipt, {
       nonce: BigInt(payload.nonce),
@@ -216,7 +219,7 @@ export class CctpRelayer {
     );
 
     const startedWaitingForWallet = process.hrtime();
-    await ctx.wallets.onEVM(toChain, async (w) => {
+    await ctx.wallets.onEVM(toChain, async (w: WalletToolBox<Wallet>) => {
       const [_, waitedInNanos] = process.hrtime(startedWaitingForWallet);
       r.metrics.waitingForWalletInMs = nanoToMs(waitedInNanos);
       logger.info(`Relaying with wallet: ${w.address}`);

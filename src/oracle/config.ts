@@ -5,13 +5,13 @@ import {
   CHAIN_ID_OPTIMISM,
 } from "@certusone/wormhole-sdk";
 import { ethers, Wallet } from "ethers";
-import { rpcsByEnv } from "./rpcs";
-import { relayerContract } from "../common/contracts";
+import { rpcsByEnv } from "./rpcs.js";
+import { relayerContract } from "../common/contracts.js";
 import { Environment } from "@wormhole-foundation/relayer-engine";
 import {
   USDC_ERC20_ADDRESSES_BY_ENV,
   USDC_RELAYER_ADDRESSES,
-} from "../common/supported-chains.config";
+} from "../common/supported-chains.config.js";
 
 const blockchainEnv = getBlockchainEnv(process.env.BLOCKCHAIN_ENV);
 

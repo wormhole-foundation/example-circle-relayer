@@ -1,31 +1,32 @@
-import { config } from "./config";
-import { USDC_WH_SENDER } from "../common/supported-chains.config";
-import { getLogger } from "../common/logging";
-import { CctpRelayer } from "./cctp.relayer";
+import { config } from "./config.js";
+import { USDC_WH_SENDER } from "../common/supported-chains.config.js";
+import { getLogger } from "../common/logging.js";
+import { CctpRelayer } from "./cctp.relayer.js";
 import {
+  RedisStorage,
   StandardRelayerApp,
   StandardRelayerContext,
 } from "@wormhole-foundation/relayer-engine";
-import { DataContext, storeRelays } from "../data/data.middleware";
-import { setupDb } from "../data/db";
+import { DataContext, storeRelays } from "../data/data.middleware.js";
+import { setupDb } from "../data/db.js";
 import { InfluxDB, WriteApi } from "@influxdata/influxdb-client";
 import { Registry } from "prom-client";
-import { logging } from "@xlabs/relayer-engine-middleware/lib/logging.middleware";
-import { assetPrices } from "@xlabs/relayer-engine-middleware/lib/asset-pricing.middleware";
-import {
-  explorerLinks,
-  ExplorerLinksContext,
-} from "@xlabs/relayer-engine-middleware/lib/explorer-links.middleware";
-import { metricsMiddleware } from "./metrics";
-import { runAPI } from "@xlabs/relayer-engine-middleware/lib/relayer-api";
+import { metricsMiddleware } from "./metrics.js";
 
+import { cctp, CctpContext } from "@xlabs/cctp-middleware";
 import {
+  assetPrices,
+  logging,
   evmOverrides,
   EvmOverridesContext,
-} from "@xlabs/relayer-engine-middleware/lib/override.middleware";
-import { cctp, CctpContext } from "@xlabs/cctp-middleware/lib";
+  explorerLinks,
+  ExplorerLinksContext,
+  PricingContext,
+  runAPI,
+} from "@xlabs/relayer-engine-middleware";
 
 export type CctpRelayerContext = StandardRelayerContext &
+  PricingContext &
   ExplorerLinksContext &
   EvmOverridesContext &
   CctpContext &
@@ -106,7 +107,9 @@ async function main() {
 
   app.listen();
 
-  runAPI(app, config.api.port, logger, app.storage, [metricsMiddlewareRegistry]);
+  runAPI(app, config.api.port, logger, app.storage as RedisStorage, [
+    metricsMiddlewareRegistry,
+  ]);
 }
 
 main();

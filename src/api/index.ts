@@ -1,11 +1,11 @@
 import Koa from "koa";
 import Router from "koa-router";
 import cors from "@koa/cors";
-import { Relay } from "../data/relay.model";
-import { setupDb } from "../data/db";
-import { getLogger } from "../common/logging";
-import { RelayController } from "./relays.controller";
-import { healthMiddleware, loggerMiddleware } from "./middleware";
+import { Relay } from "../data/relay.model.js";
+import { setupDb } from "../data/db.js";
+import { getLogger } from "../common/logging.js";
+import { RelayController } from "./relays.controller.js";
+import { healthMiddleware, loggerMiddleware } from "./middleware.js";
 
 const config = {
   env: process.env.NODE_ENV || "local",

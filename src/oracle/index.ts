@@ -1,18 +1,18 @@
-import { config } from "./config";
+import { config } from "./config.js";
 import {
   chainToCoingeckoId,
   getCoingeckoPrices,
   getCoingeckoTokens,
   usdcCoingeckoId,
-} from "./coingecko";
+} from "./coingecko.js";
 import {
   SUPPORTED_CHAINS,
   SupportedChainId,
-} from "../common/supported-chains.config";
-import { getLogger } from "../common/logging";
+} from "../common/supported-chains.config.js";
+import { getLogger } from "../common/logging.js";
 import { ethers } from "ethers";
 import { ChainId, coalesceChainName } from "@certusone/wormhole-sdk";
-import { PrometheusExporter } from "./metrics";
+import { PrometheusExporter } from "./metrics.js";
 import { Registry } from "prom-client";
 import Router from "koa-router";
 import Koa from "koa";
@@ -131,7 +131,10 @@ async function main() {
         logger.info(
           `Updated native price on chainId: ${chainId}, token: ${tokenAddress}, txhash: ${receipt.transactionHash}`
         );
-        metricsExporter.updatePriceUpdateAttempts({chainName, failure: false });
+        metricsExporter.updatePriceUpdateAttempts({
+          chainName,
+          failure: false,
+        });
       } catch (e) {
         logger.error(
           `Error processing price update for chain: ${coalesceChainName(
@@ -139,7 +142,7 @@ async function main() {
           )}`,
           e
         );
-        metricsExporter.updatePriceUpdateAttempts({chainName, failure: true });
+        metricsExporter.updatePriceUpdateAttempts({ chainName, failure: true });
       }
     }
     if (updates === 0) {

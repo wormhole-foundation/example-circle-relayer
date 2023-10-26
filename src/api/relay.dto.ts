@@ -1,5 +1,5 @@
 import { ChainId, coalesceChainName } from "@certusone/wormhole-sdk";
-import { Relay } from "../data/relay.model";
+import { Relay } from "../data/relay.model.js";
 
 export class RelayDto {
   from: {

@@ -1,5 +1,5 @@
 import { Next } from "koa";
-import { Relay, RelayStatus } from "./relay.model";
+import { Relay, RelayStatus } from "./relay.model.js";
 import {
   fetchVaaHash,
   RelayerApp,
@@ -7,10 +7,10 @@ import {
   RelayJob,
   SourceTxContext,
   StorageContext,
+  ParsedVaaWithBytes,
 } from "@wormhole-foundation/relayer-engine";
 import { Logger } from "winston";
-import { ParsedVaaWithBytes } from "@wormhole-foundation/relayer-engine/lib";
-import { CctpRelayerContext } from "../relayer";
+import { CctpRelayerContext } from "../relayer/index.js";
 
 export interface DataContext extends StorageContext, SourceTxContext {
   relay: Relay;

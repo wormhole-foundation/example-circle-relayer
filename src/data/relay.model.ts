@@ -25,12 +25,10 @@ import {
   CHAIN_ID_SUI,
   CHAIN_ID_TERRA,
   CHAIN_ID_UNSET,
-  ChainId,
-  SignedVaa,
 } from "@certusone/wormhole-sdk";
-import { RelayPoint } from "./relay.metrics";
+import type { ChainId, SignedVaa } from "@certusone/wormhole-sdk";
+import { RelayPoint } from "./relay.metrics.js";
 import { ethers } from "ethers";
-import { formatEther } from "ethers/lib/utils";
 
 export enum RelayStatus {
   REDEEMED = "redeemed",
@@ -169,7 +167,7 @@ export class Relay extends BaseEntity {
   set evmReceipt(receipt: ethers.ContractReceipt) {
     this.markRedeemed(receipt.transactionHash);
     this.gasUsed = receipt.gasUsed.toNumber();
-    this.gasPrice = Number(formatEther(receipt.effectiveGasPrice));
+    this.gasPrice = Number(ethers.utils.formatEther(receipt.effectiveGasPrice));
     this.relayCost = Number(this.gasUsed) * Number(this.gasPrice);
   }
 
