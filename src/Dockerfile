@@ -17,7 +17,7 @@ RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm pkg delete scripts.prep
 COPY --chown=node:node . .
 RUN npm run build
 
-FROM node:lts-alpine3.18 as final
+FROM node:18.18.1-alpine3.18 as final
 WORKDIR /usr/src/app
 COPY --from=preparation --chown=node:node package.json package-lock.json ./
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm pkg delete scripts.prepare && npm ci --omit=dev
