@@ -3,6 +3,7 @@ import {
   CHAIN_ID_AVAX,
   CHAIN_ID_ETH,
   CHAIN_ID_OPTIMISM,
+  CHAIN_ID_BASE,
 } from "@certusone/wormhole-sdk";
 import { SupportedChainId } from "../common/supported-chains.config.js";
 
@@ -13,6 +14,7 @@ export const chainToCoingeckoId = {
   [CHAIN_ID_AVAX]: "avalanche-2",
   [CHAIN_ID_ARBITRUM]: "ethereum",
   [CHAIN_ID_OPTIMISM]: "ethereum",
+  [CHAIN_ID_BASE]: "ethereum",
 };
 
 export const usdcCoingeckoId = "usd-coin";

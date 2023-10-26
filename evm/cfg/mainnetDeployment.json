@@ -1,0 +1,40 @@
+{
+  "deployedContracts": {
+    "2": "0000000000000000000000004cb69FaE7e7Af841e44E1A1c30Af640739378bb2",
+    "6": "0000000000000000000000004cb69FaE7e7Af841e44E1A1c30Af640739378bb2",
+    "23": "0000000000000000000000004cb69FaE7e7Af841e44E1A1c30Af640739378bb2",
+    "24": "0000000000000000000000004cb69FaE7e7Af841e44E1A1c30Af640739378bb2"
+  },
+  "acceptedTokens": {
+    "USDC": {
+      "tokenInfo": {
+        "2": {
+          "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+          "nativeSwapRate": "164690000000",
+          "maxNativeSwapAmount": "15000000000000000"
+        },
+        "6": {
+          "address": "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",
+          "nativeSwapRate": "999000000",
+          "maxNativeSwapAmount": "100000000000000000"
+        },
+        "23": {
+          "address": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+          "nativeSwapRate": "164690000000",
+          "maxNativeSwapAmount": "5000000000000000"
+        },
+        "24": {
+          "address": "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+          "nativeSwapRate": "164690000000",
+          "maxNativeSwapAmount": "5000000000000000"
+        }
+      },
+      "outboundRelayerFees": {
+        "2": "40000000",
+        "6": "270000",
+        "23": "1000000",
+        "24": "2000000"
+      }
+    }
+  }
+}
