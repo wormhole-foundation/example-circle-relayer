@@ -11,3 +11,40 @@ data:
   RELAY_TIME_BUCKETS: "2000,3000,5000,8000,15000,60000,1200000,3600000"
   TOTAL_DURATION_BUCKETS: "30000,60000,180000,300000,600000,1200000,3600000"
   WORMHOLE_RPCS: '["https://wormhole-v2-testnet-api.certus.one", "https://api.testnet.wormscan.io","http://t-guardian-01.nodes.stable.io:8051", "http://t-guardian-02.nodes.stable.io:8051"]'
+  WALLET_ACQUIRE_TIMEOUT: "8000"
+  WALLET_MONITORING_CONFIG_PATH: "/usr/src/app/config/wallet_monitoring.json"
+  WALLET_MONITORING_CONFIG: |
+    {
+      "walletConfig": {
+        "2": {
+          "network": "goerli",
+          "rebalance": {
+              "enabled": false
+          }
+        },
+        "6": {
+          "network": "testnet",
+          "rebalance": {
+              "enabled": false
+          }
+        },
+        "23": {
+          "network": "Arbitrum Testnet",
+          "rebalance": {
+              "enabled": false
+          }
+        },
+        "24": {
+          "network": "goerli",
+          "rebalance": {
+              "enabled": false
+          }
+        },
+        "30": {
+          "network": "goerli",
+          "rebalance": {
+              "enabled": false
+          }
+        }
+      }
+    }

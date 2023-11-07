@@ -1,4 +1,4 @@
-import { config } from "./config.js";
+import { loadAppConfig } from "./config.js";
 import { USDC_WH_SENDER } from "../common/supported-chains.config.js";
 import { getLogger } from "../common/logging.js";
 import { CctpRelayer } from "./cctp.relayer.js";
@@ -24,18 +24,21 @@ import {
   PricingContext,
   runAPI,
 } from "@xlabs/relayer-engine-middleware";
+import { WalletContext, wallets } from "@xlabs/relayer-engine-middleware";
 
 export type CctpRelayerContext = StandardRelayerContext &
   PricingContext &
   ExplorerLinksContext &
   EvmOverridesContext &
   CctpContext &
-  DataContext;
+  DataContext &
+  WalletContext;
 
 // based on the attempts, returns an exponential backoff in ms
 const second = 1_000;
 const minute = 60 * second;
 async function main() {
+  const config = await loadAppConfig();
   const env = config.blockchainEnv;
   const logger = getLogger(config.env, config.logLevel);
 
@@ -70,7 +73,6 @@ async function main() {
     redisCluster: config.redisClusterOptions,
     spyEndpoint: config.spy,
     concurrency: 5,
-    privateKeys: config.privateKeys,
     providers,
     logger,
     workflows: {
@@ -91,6 +93,18 @@ async function main() {
   app.use(assetPrices());
   app.use(explorerLinks());
   app.use(evmOverrides());
+  app.use(
+    wallets({
+      env: config.blockchainEnv,
+      walletConfigPerChain: config.walletConfigPerChain,
+      walletOptions: {
+        logger,
+        namespace: config.name,
+        metrics: { enabled: true, registry: metricsMiddlewareRegistry },
+        acquireTimeout: config.walletAcquireTimeout
+      },
+    })
+  );
   // End custom xlabs middleware
   app.use(cctp());
 

@@ -10,4 +10,40 @@ data:
   RELAY_CONCURRENCY: "3"
   RELAY_TIME_BUCKETS: "2000,3000,5000,8000,15000,60000,1200000,3600000"
   TOTAL_DURATION_BUCKETS: "30000,60000,180000,300000,600000,1200000,3600000"
-#  RELAYER_NAME: "CCTPRelayer-new"
+  WALLET_ACQUIRE_TIMEOUT: "8000"
+  WALLET_MONITORING_CONFIG_PATH: "/usr/src/app/config/wallet_monitoring.json"
+  WALLET_MONITORING_CONFIG: |
+    {
+      "walletConfig": {
+        "2": {
+          "network": "mainnet",
+          "rebalance": {
+              "enabled": false
+          }
+        },
+        "6": {
+          "network": "mainnet",
+          "rebalance": {
+              "enabled": false
+          }
+        },
+        "23": {
+          "network": "Arbitrum",
+          "rebalance": {
+              "enabled": false
+          }
+        },
+        "24": {
+          "network": "mainnet",
+          "rebalance": {
+              "enabled": false
+          }
+        },
+        "30": {
+          "network": "mainnet",
+          "rebalance": {
+              "enabled": false
+          }
+        }
+      }
+    }
