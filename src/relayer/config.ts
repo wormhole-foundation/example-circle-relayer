@@ -122,6 +122,7 @@ export async function loadAppConfig () {
       providers,
       supportedChainIds
     ),
+    supportedChainIds: supportedChainIds.map(String),
     walletConfigPerChain,
     walletAcquireTimeout: Number(process.env.WALLET_ACQUIRE_TIMEOUT) || 30_000
   };
