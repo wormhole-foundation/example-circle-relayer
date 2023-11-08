@@ -3,9 +3,14 @@ import { USDC_WH_SENDER } from "../common/supported-chains.config.js";
 import { getLogger } from "../common/logging.js";
 import { CctpRelayer } from "./cctp.relayer.js";
 import {
+  LoggingContext,
   RedisStorage,
-  StandardRelayerApp,
-  StandardRelayerContext,
+  SourceTxContext,
+  StagingAreaContext,
+  RelayerApp,
+  StorageContext,
+  TokenBridgeContext,
+  StandardRelayerAppOpts
 } from "@wormhole-foundation/relayer-engine";
 import { DataContext, storeRelays } from "../data/data.middleware.js";
 import { setupDb } from "../data/db.js";
@@ -26,7 +31,11 @@ import {
 } from "@xlabs/relayer-engine-middleware";
 import { WalletContext, wallets } from "@xlabs/relayer-engine-middleware";
 
-export type CctpRelayerContext = StandardRelayerContext &
+export type CctpRelayerContext = LoggingContext &
+  StorageContext &
+  TokenBridgeContext &
+  StagingAreaContext &
+  SourceTxContext &
   PricingContext &
   ExplorerLinksContext &
   EvmOverridesContext &
@@ -52,19 +61,7 @@ async function main() {
   const usdcWhSenderAddresses = USDC_WH_SENDER[env];
   const serv = new CctpRelayer(env, influxWriteApi);
 
-  let providers = undefined;
-  if (process.env.BLOCKCHAIN_PROVIDERS) {
-    try {
-      providers = JSON.parse(process.env.BLOCKCHAIN_PROVIDERS);
-      logger.info("Using providers from BLOCKCHAIN_PROVIDERS");
-    } catch (e) {
-      logger.error(`Failed to parse BLOCKCHAIN_PROVIDERS: ${process.env.BLOCKCHAIN_PROVIDERS}`);
-      logger.error("Falling back to default providers");
-    }
-  }
-
-  await setupDb({ uri: config.db.uri, database: config.db.database });
-  const app = new StandardRelayerApp<CctpRelayerContext>(env, {
+  const opts: StandardRelayerAppOpts = {
     name: config.name,
     fetchSourceTxhash: true,
     redis: config.redis,
@@ -73,7 +70,7 @@ async function main() {
     redisCluster: config.redisClusterOptions,
     spyEndpoint: config.spy,
     concurrency: 5,
-    providers,
+    providers: config.providers,
     logger,
     workflows: {
       retries: 10,
@@ -83,7 +80,10 @@ async function main() {
       baseDelayMs: 2_000,
     },
     missedVaaOptions: config.missedVaas,
-  });
+  }
+
+  await setupDb({ uri: config.db.uri, database: config.db.database });
+  const app = new RelayerApp<CctpRelayerContext>(env, opts);
 
   const metricsMiddlewareRegistry = new Registry();
   app.use(metricsMiddleware(metricsMiddlewareRegistry, config.metrics));
@@ -101,7 +101,7 @@ async function main() {
         logger,
         namespace: config.name,
         metrics: { enabled: true, registry: metricsMiddlewareRegistry },
-        acquireTimeout: config.walletAcquireTimeout
+        acquireTimeout: config.walletAcquireTimeout,
       },
     })
   );
@@ -119,4 +119,8 @@ async function main() {
   runAPI(app, config.api.port, logger, app.storage as RedisStorage, [metricsMiddlewareRegistry]);
 }
 
-main();
+main().catch((e) => {
+  console.error("Encountered unrecoverable error:");
+  console.error(e);
+  process.exit(1);
+});

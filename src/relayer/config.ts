@@ -4,9 +4,10 @@ import {
   CHAIN_ID_BASE,
   CHAIN_ID_ETH,
   CHAIN_ID_OPTIMISM,
+  ChainId,
 } from "@certusone/wormhole-sdk";
 import { ClusterOptions, RedisOptions } from "ioredis";
-import { Environment } from "@wormhole-foundation/relayer-engine";
+import { Environment, ProvidersOpts } from "@wormhole-foundation/relayer-engine";
 import { SupportedChainId } from "../common/supported-chains.config.js";
 import { loadWalletConfigPerChain } from "@xlabs/relayer-engine-middleware";
 
@@ -56,6 +57,7 @@ export async function loadAppConfig () {
     blockchainEnv,
     privateKeysPerChain
   );
+  const providers = JSON.parse(process.env.BLOCKCHAIN_PROVIDERS ?? `{"chains":{}}`);
 
   return {
     env: process.env.NODE_ENV || "local",
@@ -116,6 +118,10 @@ export async function loadAppConfig () {
       forceSeenKeysReindex:
         process.env.MISSED_VAAS_FORCE_SEEN_KEYS_REINDEX === "true",
     },
+    providers: processBlockChainProviders(
+      providers,
+      supportedChainIds
+    ),
     walletConfigPerChain,
     walletAcquireTimeout: Number(process.env.WALLET_ACQUIRE_TIMEOUT) || 30_000
   };
@@ -132,6 +138,35 @@ export function getWalletPrivateKeysPerChain (): Record<SupportedChainId, string
     [CHAIN_ID_BASE]:
       process.env.BASE_PRIVATE_KEY?.split(",") ?? evmPrivateKeys,
   };
+}
+
+/**
+ * This function is used to build the providers object to the format that
+ * the relayer-engine expects.
+ *
+ * Caveat: Currently, relayer-engine only uses the first provider in the list.
+ * @param providers RPC providers
+ * @param supportedChainIds supported chains extracted from wormhole relayers contract
+ * @returns ProvidersOpts
+ */
+function processBlockChainProviders(
+  providers: ProvidersOpts,
+  supportedChainIds: ChainId[]
+): ProvidersOpts {
+  const supportedBlockchainProviders: ProvidersOpts = {
+    chains: {},
+  };
+
+  for (const chainId of supportedChainIds) {
+    if (providers.chains[chainId]) {
+      supportedBlockchainProviders.chains[chainId] = {
+        endpoints: providers.chains[chainId]?.endpoints.map((url) => url) || [],
+      };
+    } else {
+      // no op, use default provider from relayer-engine provider middleware
+    }
+  }
+  return supportedBlockchainProviders;
 }
 
 function getSupportedChainIds(walletPrivateKeysPerChain: Record<SupportedChainId, string[]>): SupportedChainId[] {
