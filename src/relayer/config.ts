@@ -8,7 +8,7 @@ import {
 } from "@certusone/wormhole-sdk";
 import { ClusterOptions, RedisOptions } from "ioredis";
 import { Environment, ProvidersOpts } from "@wormhole-foundation/relayer-engine";
-import { SupportedChainId } from "../common/supported-chains.config.js";
+import { SupportedChainId, SUPPORTED_CHAINS } from "../common/supported-chains.config.js";
 import { loadWalletConfigPerChain } from "@xlabs/relayer-engine-middleware";
 
 export function getBlockchainEnv(env: string): Environment {
@@ -48,7 +48,7 @@ const isRedisCluster = !!process.env.REDIS_CLUSTER_ENDPOINTS;
 
 export async function loadAppConfig () {
   const privateKeysPerChain = getWalletPrivateKeysPerChain();
-  const supportedChainIds = getSupportedChainIds(privateKeysPerChain);
+  const supportedChainIds = SUPPORTED_CHAINS;  
   const blockchainEnv = getBlockchainEnv(process.env.BLOCKCHAIN_ENV ?? "");
 
   const walletConfigPerChain = await loadWalletConfigPerChain(
@@ -168,10 +168,6 @@ function processBlockChainProviders(
     }
   }
   return supportedBlockchainProviders;
-}
-
-function getSupportedChainIds(walletPrivateKeysPerChain: Record<SupportedChainId, string[]>): SupportedChainId[] {
-  return Object.keys(walletPrivateKeysPerChain).map(Number) as SupportedChainId[];
 }
 
 function parseStartingSequence(raw: string): Record<string, bigint> {
