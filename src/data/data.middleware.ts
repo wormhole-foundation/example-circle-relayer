@@ -7,7 +7,7 @@ import {
   RelayJob,
   SourceTxContext,
   StorageContext,
-  ParsedVaaWithBytes,
+  ParsedVaaWithBytes
 } from "@wormhole-foundation/relayer-engine";
 import { Logger } from "winston";
 import { CctpRelayerContext } from "../relayer/index.js";
@@ -35,8 +35,7 @@ export function storeRelays(
           vaa.emitterAddress,
           vaa.sequence,
           logger,
-          app.env,
-          3
+          app.env
         );
         relay = new Relay({
           emitterChain: emitterChain,

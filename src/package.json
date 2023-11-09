@@ -28,7 +28,7 @@
     "@improbable-eng/grpc-web-node-http-transport": "^0.15.0",
     "@influxdata/influxdb-client": "^1.33.2",
     "@koa/cors": "^4.0.0",
-    "@wormhole-foundation/relayer-engine": "github:wormhole-foundation/relayer-engine#e3c510048ef8c900769461040440b689a18d9e0d",
+    "@wormhole-foundation/relayer-engine": "github:wormhole-foundation/relayer-engine#6c56f6ed2336550537fafa115b82ce43c60e0de3",
     "@xlabs/cctp-middleware": "1.0.1",
     "@xlabs/relayer-engine-middleware": "3.0.4",
     "ethers": "^5.7.2",
