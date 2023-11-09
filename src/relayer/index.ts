@@ -12,7 +12,6 @@ import {
   RelayerApp,
   StorageContext,
   TokenBridgeContext,
-  StandardRelayerAppOpts,
   sourceTx
 } from "@wormhole-foundation/relayer-engine";
 import { DataContext, storeRelays } from "../data/data.middleware.js";
@@ -64,7 +63,7 @@ async function main() {
   const usdcWhSenderAddresses = USDC_WH_SENDER[env];
   const serv = new CctpRelayer(env, influxWriteApi);
 
-  const opts: StandardRelayerAppOpts = {
+  const opts = {
     name: config.name,
     fetchSourceTxhash: true,
     redis: config.redis,
@@ -138,29 +137,25 @@ async function main() {
 
   app.listen();
 
-  if (opts.missedVaaOptions) {
-    const missedVaasMetricsRegistry = new Registry();
-    const { forceSeenKeysReindex, startingSequenceConfig } = opts.missedVaaOptions;
+  const missedVaasMetricsRegistry = new Registry();
 
-    spawnMissedVaaWorker(app, {
-      namespace: opts.name,
-      logger: logger.child({ module: "missed-vaas" }),
-      redis: opts.redis,
-      redisCluster: opts.redisCluster,
-      redisClusterEndpoints: opts.redisClusterEndpoints,
-      wormholeRpcs: opts.wormholeRpcs,
-      concurrency: 1, // Object.keys(privateKeys).length,
-      vaasFetchConcurrency: 1, // 3,
-      storagePrefix: store.getPrefix(),
-      registry: missedVaasMetricsRegistry,
-      checkInterval: 15000,
-      forceSeenKeysReindex,
-      startingSequenceConfig,
-    });
+  spawnMissedVaaWorker(app, {
+    namespace: opts.name,
+    logger: logger.child({ module: "missed-vaas" }),
+    redis: opts.redis,
+    redisCluster: opts.redisCluster,
+    redisClusterEndpoints: opts.redisClusterEndpoints,
+    wormholeRpcs: opts.wormholeRpcs,
+    concurrency: 1, // Object.keys(privateKeys).length,
+    vaasFetchConcurrency: 1, // 3,
+    storagePrefix: store.getPrefix(),
+    registry: missedVaasMetricsRegistry,
+    checkInterval: 15000,
+    forceSeenKeysReindex: opts.missedVaaOptions.forceSeenKeysReindex,
+    startingSequenceConfig: opts.missedVaaOptions.startingSequenceConfig,
+  });
 
-    registries.push(missedVaasMetricsRegistry);
-  }
-
+  registries.push(missedVaasMetricsRegistry);
 
   runAPI(app, config.api.port, logger, store, registries);
 }
