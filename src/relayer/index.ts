@@ -12,7 +12,8 @@ import {
   RelayerApp,
   StorageContext,
   TokenBridgeContext,
-  sourceTx
+  sourceTx,
+  stagingArea
 } from "@wormhole-foundation/relayer-engine";
 import { DataContext, storeRelays } from "../data/data.middleware.js";
 import { setupDb } from "../data/db.js";
@@ -126,6 +127,12 @@ async function main() {
     })
   );
   // End custom xlabs middleware
+  app.use(stagingArea({
+    namespace: config.name,
+    redisCluster: config.redisClusterOptions,
+    redis: config.redis,
+    redisClusterEndpoints: config.redisClusterEndpoints,
+  }));
   app.use(sourceTx());
   app.use(cctp());
 
