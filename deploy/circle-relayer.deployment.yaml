@@ -53,7 +53,7 @@ spec:
       volumes:
         - name: wallet-monitor-config
           configMap:
-            name: token-bridge-relayer-env
+            name: circle-relayer-env
             defaultMode: 420
             items:
               - key: WALLET_MONITORING_CONFIG
