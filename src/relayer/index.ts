@@ -31,8 +31,9 @@ import {
   ExplorerLinksContext,
   PricingContext,
   runAPI,
+  WalletContext,
+  wallets
 } from "@xlabs/relayer-engine-middleware";
-import { WalletContext, wallets } from "@xlabs/relayer-engine-middleware";
 
 export type CctpRelayerContext = LoggingContext &
   StorageContext &
