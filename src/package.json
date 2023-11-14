@@ -30,7 +30,7 @@
     "@koa/cors": "^4.0.0",
     "@wormhole-foundation/relayer-engine": "github:wormhole-foundation/relayer-engine#6c56f6ed2336550537fafa115b82ce43c60e0de3",
     "@xlabs/cctp-middleware": "1.0.1",
-    "@xlabs/relayer-engine-middleware": "^3.0.11",
+    "@xlabs/relayer-engine-middleware": "3.0.12",
     "ethers": "^5.7.2",
     "ioredis": "^5.3.1",
     "koa": "^2.14.1",
