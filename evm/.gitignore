@@ -8,3 +8,4 @@ broadcast-test
 yarn-error.log
 forge-scripts/deploy.out
 deploy.out
+.env
