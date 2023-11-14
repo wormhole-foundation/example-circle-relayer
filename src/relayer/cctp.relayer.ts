@@ -220,13 +220,11 @@ export class CctpRelayer {
 
     const startedWaitingForWallet = process.hrtime();
     await ctx.executeWithWallet(toChain, async (wallet) => {
-      const {address, walletToolbox, rawWallet} = wallet;
+      const {address, rawWallet} = wallet;
       const [_, waitedInNanos] = process.hrtime(startedWaitingForWallet);
       r.metrics.waitingForWalletInMs = nanoToMs(waitedInNanos);
       logger.info(`Relaying with wallet: ${address}`);
       try {
-        const balance = await walletToolbox.pullNativeBalance(address);
-        logger.info(`Wallet balance before: ${balance.formattedBalance}`);
         // redeem parameters for target function call
         const { receipt, waitedForTxInMs } = await this.submitTx(
           ctx,
@@ -250,10 +248,6 @@ export class CctpRelayer {
         if (explorerLink.length) {
           logger.info(`See transfer: ${explorerLink}`);
         }
-        const balanceAfter = await walletToolbox.pullNativeBalance(
-          address
-        );
-        logger.info(`Wallet balance after: ${balanceAfter.formattedBalance}`);
       } catch (e: any) {
         if (e.error?.reason?.includes("already consumed")) {
           logger.info("Tx failed. This message has already been relayed.");
