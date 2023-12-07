@@ -291,12 +291,21 @@ export class CctpRelayer {
 
     // 5. redeem the transfer on the target chain
     const startedWaitingForTx = process.hrtime();
-    const tx: ethers.ContractTransaction = await contract.redeemTokens(
+
+    const populatedTx = await contract.populateTransaction.redeemTokens(
       redeemParameters,
       {
         value: nativeSwapQuote,
       }
     );
+
+    const signedTx = await contract.signer.signTransaction(populatedTx);
+
+    const parsedTx = ethers.utils.parseTransaction(signedTx);
+
+    logger.info(`Redeem tokens transaction hash: ${parsedTx.hash}`);
+
+    const tx = await contract.provider.sendTransaction(signedTx);
 
     job.updateProgress(90);
     let receipt: ethers.ContractReceipt = await tx.wait(1);
