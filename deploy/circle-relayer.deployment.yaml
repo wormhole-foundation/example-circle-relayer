@@ -31,6 +31,9 @@ spec:
             limits:
               cpu: 1000m
               memory: 2000Mi
+          volumeMounts:
+            - name: wallet-monitor-config
+              mountPath: /usr/src/app/config
           envFrom:
             - configMapRef:
                 name: circle-relayer-env
@@ -47,3 +50,11 @@ spec:
             - secretRef:
                 name: circle-relayer-db
                 optional: false
+      volumes:
+        - name: wallet-monitor-config
+          configMap:
+            name: circle-relayer-env
+            defaultMode: 420
+            items:
+              - key: WALLET_MONITORING_CONFIG
+                path: wallet_monitoring.json

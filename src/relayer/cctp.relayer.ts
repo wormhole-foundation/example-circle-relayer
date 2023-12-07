@@ -25,9 +25,9 @@ import {
 import { CctpRelayerContext } from "./index.js";
 import {
   Environment,
+  EVMWallet,
   Next,
   UnrecoverableError,
-  WalletToolBox,
 } from "@wormhole-foundation/relayer-engine";
 import { RelayStatus } from "../data/relay.model.js";
 import { ParsedVaaWithBytes } from "@wormhole-foundation/relayer-engine";
@@ -219,16 +219,17 @@ export class CctpRelayer {
     );
 
     const startedWaitingForWallet = process.hrtime();
-    await ctx.wallets.onEVM(toChain, async (w: WalletToolBox<Wallet>) => {
+    await ctx.executeWithWallet(toChain, async (wallet) => {
+      const {address, rawWallet} = wallet;
       const [_, waitedInNanos] = process.hrtime(startedWaitingForWallet);
       r.metrics.waitingForWalletInMs = nanoToMs(waitedInNanos);
-      logger.info(`Relaying with wallet: ${w.address}`);
+      logger.info(`Relaying with wallet: ${address}`);
       try {
         // redeem parameters for target function call
         const { receipt, waitedForTxInMs } = await this.submitTx(
           ctx,
           targetRelayerAddress,
-          w.wallet,
+          rawWallet as EVMWallet,
           vaaBytes!,
           circleMessage,
           attestation,
