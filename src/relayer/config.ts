@@ -25,6 +25,12 @@ export function getBlockchainEnv(env: string): Environment {
   }
 }
 
+const wormscanEndpointsByEnv = {
+  [Environment.MAINNET]: "https://api.wormscan.io",
+  [Environment.TESTNET]: "https://api.testnet.wormscan.io",
+  [Environment.DEVNET]: "https://api.testnet.wormscan.io",
+};
+
 export interface MetricsMiddlewareConfig {
   processingDurationBuckets?: number[],
   totalDurationBuckets?: number[],
@@ -124,7 +130,14 @@ export async function loadAppConfig () {
     ),
     supportedChainIds: supportedChainIds.map(String),
     walletConfigPerChain,
-    walletAcquireTimeout: Number(process.env.WALLET_ACQUIRE_TIMEOUT) || 30_000
+    walletAcquireTimeout: Number(process.env.WALLET_ACQUIRE_TIMEOUT) || 30_000,
+    sourceTxOpts: {
+      wormscanEndpoint: process.env.FETCH_SOURCE_TX_ENDPOINT ? process.env.FETCH_SOURCE_TX_ENDPOINT : wormscanEndpointsByEnv[blockchainEnv],
+      retries: process.env.FETCH_SOURCE_TX_RETRIES ? Number(process.env.FETCH_SOURCE_TX_RETRIES) : 3,
+      initialDelay: process.env.FETCH_SOURCE_TX_INITIAL_DELAY ? Number(process.env.FETCH_SOURCE_TX_INITIAL_DELAY) : 150,
+      maxDelay: process.env.FETCH_SOURCE_TX_MAX_DELAY ? Number(process.env.FETCH_SOURCE_TX_MAX_DELAY) : 1000,
+      timeout: process.env.FETCH_SOURCE_TX_MAX_DELAY ? Number(process.env.FETCH_SOURCE_TX_MAX_DELAY) : 3000,
+    }
   };
 }
 

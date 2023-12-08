@@ -134,7 +134,7 @@ async function main() {
     redis: config.redis,
     redisClusterEndpoints: config.redisClusterEndpoints,
   }));
-  app.use(sourceTx());
+  app.use(sourceTx(config.sourceTxOpts));
   app.use(cctp());
 
   app.use(storeRelays(app, logger));
