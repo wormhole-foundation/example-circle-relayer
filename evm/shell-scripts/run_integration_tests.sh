@@ -8,7 +8,7 @@ fi
 
 echo "Starting anvil"
 
-# ethereum goerli testnet
+# ethereum sepolia testnet
 anvil \
     -m "myth like bonus scare over problem client lizard pioneer submit female collect" \
     --port 8546 \
@@ -38,7 +38,7 @@ RELEASE_NATIVE_TOKEN_DECIMALS=$ETH_NATIVE_TOKEN_DECIMALS \
 RELEASE_FEE_RECIPIENT=$TESTING_FEE_RECIPIENT \
 RELEASE_OWNER_ASSISTANT=$TESTING_OWNER_ASSISTANT \
 forge script forge-scripts/deploy_contracts.sol \
-    --rpc-url http://localhost:8546 \
+    --rpc-url http://127.0.0.1:8546 \
     --private-key $PRIVATE_KEY \
     --broadcast --slow > deploy.out 2>&1
 
@@ -48,7 +48,7 @@ RELEASE_NATIVE_TOKEN_DECIMALS=$AVAX_NATIVE_TOKEN_DECIMALS \
 RELEASE_FEE_RECIPIENT=$TESTING_FEE_RECIPIENT \
 RELEASE_OWNER_ASSISTANT=$TESTING_OWNER_ASSISTANT \
 forge script forge-scripts/deploy_contracts.sol \
-    --rpc-url http://localhost:8547 \
+    --rpc-url http://127.0.0.1:8547 \
     --private-key $PRIVATE_KEY \
     --broadcast --slow >> deploy.out 2>&1
 

@@ -125,7 +125,7 @@ contract CircleRelayer is CircleRelayerMessages, CircleRelayerGovernance, Reentr
         );
 
         // transfer the tokens with instructions via the circle integration contract
-        messageSequence = integration.transferTokensWithPayload(
+        messageSequence = integration.transferTokensWithPayload{ value: msg.value }(
             ICircleIntegration.TransferParameters({
                 token: address(token),
                 amount: amount,
