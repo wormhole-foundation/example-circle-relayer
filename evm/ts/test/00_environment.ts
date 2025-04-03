@@ -2,7 +2,7 @@ import {expect} from "chai";
 import {ethers} from "ethers";
 import {
   CHAIN_ID_AVAX,
-  CHAIN_ID_ETH,
+  CHAIN_ID_SEPOLIA,
   tryNativeToHexString,
 } from "@certusone/wormhole-sdk";
 import {
@@ -38,7 +38,7 @@ describe("Environment Test", () => {
     });
   });
 
-  describe("Ethereum Goerli Testnet Fork", () => {
+  describe("Ethereum Sepolia Testnet Fork", () => {
     describe("Environment", () => {
       it("Variables", () => {
         expect(ETH_LOCALHOST).is.not.undefined;
@@ -67,7 +67,7 @@ describe("Environment Test", () => {
 
       it("Wormhole", async () => {
         const chainId = await wormhole.chainId();
-        expect(chainId).to.equal(CHAIN_ID_ETH as number);
+        expect(chainId).to.equal(CHAIN_ID_SEPOLIA as number);
 
         // fetch current wormhole protocol fee
         const messageFee: ethers.BigNumber = await wormhole.messageFee();
@@ -239,7 +239,7 @@ describe("Environment Test", () => {
 
         // start prank (impersonate the Circle masterMinter)
         await provider.send("anvil_impersonateAccount", [masterMinter]);
-
+        await provider.send("anvil_setBalance", [masterMinter, ethers.utils.parseEther("100").toString()]);
         // configure my wallet as minter
         {
           const usdc = IUSDC__factory.connect(
@@ -260,7 +260,6 @@ describe("Environment Test", () => {
 
         // stop prank
         await provider.send("anvil_stopImpersonatingAccount", [masterMinter]);
-
         // mint USDC and confirm with a balance check
         {
           const usdc = IUSDC__factory.connect(ETH_USDC_TOKEN_ADDRESS, wallet);

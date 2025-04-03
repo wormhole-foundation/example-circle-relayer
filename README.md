@@ -50,7 +50,7 @@ Before deploying the contracts, set the `Deployment Variables` and `RPC` for you
 Then deploy the contracts by executing the following commands:
 
 ```bash
-# goerli
+# sepolia
 . env/testnet/eth.env && shell-scripts/deploy_circle_relayer.sh --private-key put_your_private_key_here
 
 # fuji
@@ -71,11 +71,11 @@ You might need to specify all three of the following arguments:
 So for example, you would execute:
 
 ```bash
-# goerli
+# sepolia
 source env/testnet/eth.env && shell-scripts/deploy_circle_relayer.sh --ledger --mnemonic-derivation-paths your_derivation_path --sender your_address_for_given_path
 ```
 
-to deploy on goerli with a ledger wallet.
+to deploy on sepolia with a ledger wallet.
 
 ## Contract verification
 

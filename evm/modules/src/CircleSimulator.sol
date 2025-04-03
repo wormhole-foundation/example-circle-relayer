@@ -42,9 +42,9 @@ contract CircleSimulator {
             "total supply overflow"
         );
         vm.startPrank(usdc.masterMinter());
-        usdc.configureMinter(msg.sender, type(uint256).max);
-        usdc.mint(msg.sender, amount);
+        usdc.configureMinter(address(this), type(uint256).max);
         vm.stopPrank();
+        usdc.mint(msg.sender, amount);
     }
 
     /**

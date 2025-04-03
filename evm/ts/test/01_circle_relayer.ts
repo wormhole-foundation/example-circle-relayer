@@ -2,7 +2,7 @@ import {expect} from "chai";
 import {ethers} from "ethers";
 import {
   CHAIN_ID_AVAX,
-  CHAIN_ID_ETH,
+  CHAIN_ID_SEPOLIA,
   tryNativeToHexString,
 } from "@certusone/wormhole-sdk";
 import {
@@ -28,6 +28,7 @@ import {
   ICircleIntegration__factory,
   IUSDC__factory,
   IWormhole__factory,
+  IMessageTransmitter__factory,
 } from "../src/ethers-contracts";
 import {MockGuardians} from "@certusone/wormhole-sdk/lib/cjs/mock";
 import {RedeemParameters} from "../src";
@@ -122,7 +123,7 @@ describe("Circle Integration Test", () => {
   const avaxMaxNativeSwapAmount = ethers.utils.parseEther("100");
 
   describe("Contract Setup", () => {
-    describe("Ethereum Goerli Testnet", () => {
+    describe("Ethereum Sepolia Testnet", () => {
       it("Should Register Circle Relayer Target Contract", async () => {
         // Convert the target contract address to bytes32, since other
         // non-evm blockchains (e.g. Solana) have 32 byte wallet addresses.
@@ -178,7 +179,7 @@ describe("Circle Integration Test", () => {
         // set the relayer fee for USDC
         const receipt = await ethCircleRelayer
           .connect(ethOwnerAssistantWallet)
-          .updateNativeSwapRate(CHAIN_ID_ETH, ethUsdc.address, nativeSwapRate)
+          .updateNativeSwapRate(CHAIN_ID_SEPOLIA, ethUsdc.address, nativeSwapRate)
           .then((tx: ethers.ContractTransaction) => tx.wait())
           .catch((msg: any) => {
             // should not happen
@@ -198,7 +199,7 @@ describe("Circle Integration Test", () => {
         // set the max native swap amount for USDC
         const receipt = await ethCircleRelayer
           .updateMaxNativeSwapAmount(
-            CHAIN_ID_ETH,
+            CHAIN_ID_SEPOLIA,
             ethUsdc.address,
             ethMaxNativeSwapAmount
           )
@@ -224,11 +225,11 @@ describe("Circle Integration Test", () => {
         // Convert the target contract address to bytes32, since other
         // non-evm blockchains (e.g. Solana) have 32 byte wallet addresses.
         const targetContractAddressHex =
-          "0x" + tryNativeToHexString(ethCircleRelayer.address, CHAIN_ID_ETH);
+          "0x" + tryNativeToHexString(ethCircleRelayer.address, CHAIN_ID_SEPOLIA);
 
         // register the emitter
         const receipt = await avaxCircleRelayer
-          .registerContract(CHAIN_ID_ETH, targetContractAddressHex)
+          .registerContract(CHAIN_ID_SEPOLIA, targetContractAddressHex)
           .then((tx: ethers.ContractTransaction) => tx.wait())
           .catch((msg: any) => {
             // should not happen
@@ -239,7 +240,7 @@ describe("Circle Integration Test", () => {
 
         // query the contract and confirm that the contract address is set in storage
         const emitterInContractState =
-          await avaxCircleRelayer.getRegisteredContract(CHAIN_ID_ETH);
+          await avaxCircleRelayer.getRegisteredContract(CHAIN_ID_SEPOLIA);
         expect(emitterInContractState).to.equal(targetContractAddressHex);
       });
 
@@ -247,7 +248,7 @@ describe("Circle Integration Test", () => {
         // set the relayer fee for USDC
         const receipt = await avaxCircleRelayer
           .connect(avaxOwnerAssistantWallet)
-          .updateRelayerFee(CHAIN_ID_ETH, avaxUsdc.address, ethRelayerFee)
+          .updateRelayerFee(CHAIN_ID_SEPOLIA, avaxUsdc.address, ethRelayerFee)
           .then((tx: ethers.ContractTransaction) => tx.wait())
           .catch((msg: any) => {
             // should not happen
@@ -258,7 +259,7 @@ describe("Circle Integration Test", () => {
 
         // check contract state
         const relayerFeeInState = await avaxCircleRelayer.relayerFee(
-          CHAIN_ID_ETH,
+          CHAIN_ID_SEPOLIA,
           avaxUsdc.address
         );
         expect(relayerFeeInState.toString()).to.equal(ethRelayerFee.toString());
@@ -313,6 +314,55 @@ describe("Circle Integration Test", () => {
         );
       });
     });
+
+    describe("MessageFee", () => {
+
+      it("Transfer Tokens With Relay - WH messageFee is higher than 0", async () => {
+        const amountFromEth = ethers.BigNumber.from("6900000");
+        const toNativeTokenAmountEth = ethers.BigNumber.from("500000");
+        const targetRecipientWallet =
+          "0x" + tryNativeToHexString(avaxWallet.address, "avalanche");
+
+        // sets messageFee to 0.001
+        const newMessageFee = ethers.utils.parseEther("0.001");
+        const wormholeAddress = await ethCircleIntegration.wormhole()
+        const wormholeBalanceBefore = await ethProvider.getBalance(wormholeAddress)
+        const wormhole = IWormhole__factory.connect(wormholeAddress, ethWallet)
+        await ethProvider.send("anvil_setStorageAt", [
+          wormholeAddress,
+          7, // messageFee storage slot
+          ethers.utils.hexZeroPad(newMessageFee.toHexString(), 32)
+        ]);
+        const messageFee = await wormhole.messageFee();
+          await ethUsdc
+            .approve(ethCircleRelayer.address, amountFromEth)
+            .then((tx) => tx.wait());
+        const receipt = await ethCircleRelayer
+          .transferTokensWithRelay(
+            ethUsdc.address,
+            amountFromEth,
+            toNativeTokenAmountEth,
+            CHAIN_ID_AVAX,
+            targetRecipientWallet,
+            {
+              value: newMessageFee
+            }
+          )
+          await receipt.wait()
+        const wormholeBalanceAfter = await ethProvider.getBalance(wormholeAddress)
+        // sets messageFee back to 0
+        await ethProvider.send("anvil_setStorageAt", [
+          wormholeAddress,
+          7, // messageFee storage slot
+          ethers.utils.hexZeroPad('0x0', 32)
+        ]);
+        const messageFeeAfter = await wormhole.messageFee()
+        expect(messageFee.eq(newMessageFee)).to.be.true;
+        expect(messageFeeAfter.eq(ethers.BigNumber.from('0'))).to.be.true;
+        expect(wormholeBalanceAfter.sub(wormholeBalanceBefore).eq(newMessageFee)).to.be.true;
+      })
+    })
+
     describe("Transfer Tokens With Relay Logic", () => {
       // amounts from Ethereum
       const amountFromEth = ethers.BigNumber.from("6900000");
@@ -381,7 +431,7 @@ describe("Circle Integration Test", () => {
             findWormholeMessageInLogs(
               receipt!.logs,
               address,
-              CHAIN_ID_ETH as number
+              CHAIN_ID_SEPOLIA as number
             )
           );
         expect(wormholeMessage).is.not.null;
@@ -540,7 +590,7 @@ describe("Circle Integration Test", () => {
             avaxUsdc.address,
             amountFromAvax,
             toNativeTokenAmountAvax,
-            CHAIN_ID_ETH,
+            CHAIN_ID_SEPOLIA,
             targetRecipientWallet
           )
           .then(async (tx) => {
@@ -670,7 +720,7 @@ describe("Circle Integration Test", () => {
 
         // fetch the relayer fee
         const relayerFee = await avaxCircleRelayer.relayerFee(
-          CHAIN_ID_ETH,
+          CHAIN_ID_SEPOLIA,
           avaxUsdc.address
         );
 
@@ -735,7 +785,7 @@ describe("Circle Integration Test", () => {
             avaxUsdc.address,
             amountFromAvax,
             toNativeTokenAmountAvax,
-            CHAIN_ID_ETH,
+            CHAIN_ID_SEPOLIA,
             targetRecipientWallet
           )
           .then(async (tx) => {
