@@ -1,5 +1,7 @@
 # WH x CCTP USDC Bridge Example
 
+This repository is deprecated and archived. If you want to relay CCTP + Wormhole messages, we recommend using the newer Executor relaying system: https://github.com/wormholelabs-xyz/example-messaging-executor
+
 Please start by reading the [design document](https://github.com/wormhole-foundation/example-circle-relayer/blob/main/DESIGN.md).
 
 ## Wormhole-Scaffolding
